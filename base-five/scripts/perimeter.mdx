@@ -1,0 +1,75 @@
+---
+title: "perimeter"
+description: "Demarcação de perímetros (áreas de circulação restrita) no mapa, voltada para uso policial."
+---
+
+O **perimeter** permite que policiais criem e gerenciem **zonas circulares restritas** no mapa. Cada perímetro é um blip de raio (`AddBlipForRadius`) centrado na posição do jogador na criação, com nome e distância (raio) definidos por ele. Ao criar/remover, todos recebem uma notificação policial e um log vai ao Discord. Jogadores que entram/saem do raio recebem aviso automático na tela.
+
+<Note>
+  Trabalha apenas com blips/áreas no mapa, não coloca cones, barreiras ou objetos físicos, nem usa itens.
+</Note>
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Zonas circulares restritas" icon="circle-notch">
+    Crie blips de raio (`AddBlipForRadius`) centrados na posição do jogador, com nome e raio definidos.
+  </Card>
+  <Card title="Aviso de entrada/saída" icon="bell">
+    Jogadores que entram ou saem do raio recebem aviso automático na tela.
+  </Card>
+  <Card title="Notificação policial" icon="shield">
+    Ao criar ou remover um perímetro, todos os policiais recebem uma notificação.
+  </Card>
+  <Card title="Log no Discord" icon="discord">
+    Cada criação/remoção gera um log (`Embed`) enviado ao Discord.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vRP" icon="cube">
+    `vRP.Passport`, `vRP.GetEntityCoords`.
+  </Card>
+  <Card title="dynamic" icon="desktop">
+    Menu de gestão dos perímetros.
+  </Card>
+  <Card title="keyboard" icon="keyboard">
+    `vKEYBOARD.Secondary`.
+  </Card>
+  <Card title="discord" icon="discord">
+    `Embed` para os logs.
+  </Card>
+</CardGroup>
+
+<Info>
+  Também consome os eventos `Notify`, `dynamic:Close` e `Connect`.
+</Info>
+
+---
+
+## Eventos
+
+O servidor expõe a interface Tunnel `perimeter` (`Core.Perimeters`).
+
+| Evento | Lado | Descrição |
+|---|---|---|
+| `perimeter:New` | Servidor | Pede Nome + Distância, gera o ID, salva e propaga o novo perímetro. |
+| `perimeter:Remove` | Servidor | Remove o perímetro selecionado e propaga. |
+| `Connect` | Servidor | Ao conectar, envia a lista de perímetros (`perimeter:List`). |
+| `perimeter:Dynamic` | Cliente | Abre o menu `Perimetros` (Adicionar + remoção por item). |
+| `perimeter:Add` | Cliente | Cria o blip de raio (cor 1, alpha 200). |
+| `perimeter:Remove` | Cliente | Remove o blip do perímetro indicado. |
+| `perimeter:List` | Cliente | Recria todos os blips ao conectar. |
+
+---
+
+## Customização
+
+- **Acesso:** criação/remoção pelo menu `dynamic` (`perimeter:Dynamic`), não por comandos.
+- **Blip:** cor (`SetBlipColour`, padrão `1`) e alpha (`SetBlipAlpha`, padrão `200`) em `client-side/core.lua`.
+- **Detecção:** verificação a cada `1000ms`.
+- **Textos/log:** em `server-side/core.lua`. **ID:** padrão `"DDLLDDLL"` (`GenerateString`).

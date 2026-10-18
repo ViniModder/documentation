@@ -1,0 +1,215 @@
+---
+title: "Configuração"
+description: "Todos os ajustes do Five Bennys: comandos, acesso, regras de serviço, oficinas, catálogo de tunagens, preços e sons de motor."
+---
+
+A configuração fica em `config/`. O `config.lua` concentra identidade, acesso, regras e oficinas; os demais arquivos definem o catálogo de tunagens, os preços e os sons de motor.
+
+---
+
+## config/config.lua
+
+<AccordionGroup>
+  <Accordion title="Comandos e permissões" icon="terminal">
+    ```lua
+    Bennys.Commands = {
+        OpenBennys      = "bennys",   -- admin: abre a tunagem e aplica direto (sem orçamento)
+        OpenBudgetPanel = "pedidos",  -- mecânico: abre o serviço em andamento ou a lista de orçamentos
+    }
+    
+    -- Permissões GLOBAIS. As permissões POR OFICINA ficam em Bennys.Mechanics.
+    Bennys.Permissions = {
+        Admin = "Admin",  -- exigido pelo /bennys
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Aparência" icon="palette">
+    ```lua
+    Bennys.Logo = "https://cdn.fivenetwork.dev/IDCore/LOGO%20-%20BRANCO.png"  -- logo no topo do painel
+    
+    Bennys.Colors = {
+        primaryColor   = "#0095f3",
+        secondaryColor = "#005c97",
+        thirdyColor    = "#003c61",
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Regras de serviço" icon="sliders">
+    ```lua
+    Bennys.MinMechanics            = 1     -- mínimo de mecânicos online p/ liberar tunagem via orçamento
+    Bennys.OnlyOwner               = false -- só o dono do veículo pode tunar
+    Bennys.OnlyMechanic            = false -- só mecânicos podem tunar (desliga o autosserviço)
+    Bennys.TuningCarIfNotMechanics = true  -- permite tunar pagando na hora quando não há mecânico
+    Bennys.PercentageMechanic      = 70    -- % do valor que vai pro mecânico que atende
+    ```
+
+    **Timers (segundos)**
+
+    ```lua
+    Bennys.TimeInstallMod    = 10  -- tempo de instalação de cada peça pelo mecânico
+    Bennys.RequestRepairTime = 30  -- intervalo entre solicitações de reparo
+    Bennys.TimeRepairMotor   = 5   -- tempo do reparo de motor
+    ```
+
+    <Tip>
+      Combine `OnlyMechanic`, `TuningCarIfNotMechanics` e `MinMechanics` para escolher entre autosserviço, orçamento obrigatório ou modelo híbrido. Veja os três modos na [Apresentação](/five-bennys/apresentacao#como-funciona-o-fluxo-de-serviço).
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Marcador das oficinas" icon="location-dot">
+    Estilo do `DrawMarker` usado em **todas** as oficinas.
+
+    ```lua
+    Bennys.Marker = {
+        id           = 36,
+        color        = { 255, 255, 255, 255 },
+        scale        = vec3(0.9, 0.9, 0.9),
+        rotacao      = vec3(0.0, 0.0, 130.0),
+        bobUpAndDown = false,
+        faceCamera   = false,
+        rotation     = true,
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Oficinas (mecânicas)" icon="warehouse">
+    Cada entrada em `Bennys.Mechanics` é uma oficina. Duplique o bloco para criar quantas quiser.
+
+    ```lua
+    Bennys.Mechanics = {
+        ["motorworks"] = {
+            Label            = "Benny's Motorworks",  -- nome/identificação da oficina
+            Type             = "allCustoms",          -- allCustoms | customization | performance
+            AccessPermission = false,                 -- quem pode ABRIR o balcão (false = público)
+            WorkPermission   = "Bennys",              -- quem TRABALHA como mecânico aqui
+            Coords = {                                -- pontos com marcador
+                vector3(-213.95, -1348.08, 31.54),
+                vector3(-214.27, -1342.94, 31.54),
+                -- ...
+            },
+        },
+    }
+    ```
+
+    | Campo | Descrição |
+    | --- | --- |
+    | `Label` | Nome exibido/identificação da oficina |
+    | `Type` | O que pode ser tunado: `allCustoms`, `customization` ou `performance` |
+    | `AccessPermission` | Permissão para **abrir** o balcão. `false` = qualquer um |
+    | `WorkPermission` | Permissão de quem **trabalha** ali — recebe os orçamentos e atende |
+    | `Coords` | Lista de `vector3` onde o marcador aparece |
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## config/mods.lua — Catálogo de tunagens
+
+Define todas as categorias de tunagem. Cada categoria tem `name` (rótulo), `modType` (`customization` ou `performance`), `numMods` (quantidade) e `mods` (mapa `id → nome`). As chaves numéricas `0`–`49` são os slots nativos do GTA; as de chave string (`neon`, `bulletProofTyres`, `primaryColour`, …) são customizações especiais.
+
+```lua
+Bennys.Mods = {
+    modTypes = {                                     -- rótulo + tipo de CADA slot nativo 0..49
+        [0] = { name = 'Aerofólio', modType = 'customization' },
+        [4] = { name = 'Escapamento', modType = 'performance' },
+        -- ...
+    },
+    [11] = {                                          -- categoria com opções detalhadas (ex: Motor)
+        name = 'Motor', modType = 'performance', numMods = 5,
+        mods = { ["0"] = "Nível 1", ["1"] = "Nível 2", ["2"] = "Nível 3", ["3"] = "Nível 4" },
+    },
+    ['neon'] = {
+        name = "Neon", modType = 'customization', icon = "neon", numMods = 7,
+        mods = { ["-1"]="Desativado", ["0"]="Esquerda", ["1"]="Direita", ["2"]="Frente", ["3"]="Atrás" },
+    },
+    ['bulletProofTyres'] = {
+        name = "Pneus à Prova de Balas", modType = 'customization',
+        icon = "bulletProofTyres", enabled = true, numMods = 2,
+        mods = { ["-1"] = "Desativado", ["1"] = "Ativado" },
+    },
+}
+```
+
+<Warning>
+  **Desativar uma tunagem globalmente:** adicione `enabled = false` na entrada da categoria (em `Bennys.Mods[categoria]` ou em `Bennys.Mods.modTypes[categoria]`). Ela some do menu **e** o servidor recusa aplicá-la, via `Bennys.IsCategoryEnabled`. Não é preciso apagar linhas.
+</Warning>
+
+O arquivo também define `Bennys.ExtraMods` (pintura, xenon, tipo de roda, fumaça, extras) e as cores camaleão (`Bennys.ChameleonColors` → `Bennys.ChameleonPaints`), montadas automaticamente no fim do arquivo.
+
+---
+
+## config/prices.lua — Preços
+
+O preço de cada tunagem casa com a categoria de `mods.lua`. Além dos preços por categoria há duas taxas globais.
+
+```lua
+Bennys.Prices = {
+    initialPrice = 20000,   -- taxa fixa cobrada em QUALQUER serviço
+    repairPrice  = 3000,    -- custo do reparo de motor
+
+    [11] = {                             -- ex: Motor
+        price       = 5000,              -- valor base da peça
+        increaseBy  = 3000,              -- acréscimo por nível: preço = price + increaseBy * nível (0 = fixo)
+        requireItem = false,             -- exige um item do inventário?
+        item = { index = '', qtd = 1 },  -- item exigido e quantidade
+    },
+    neon = {
+        price = 1000, increaseBy = 1000, requireItem = false, item = { index = '', qtd = 1 },
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `price` | Valor base cobrado pela peça |
+| `increaseBy` | Acréscimo por nível. Preço final = `price + increaseBy * nível`. `0` = fixo |
+| `requireItem` | Se `true`, exige `item.qtd` do item `item.index` no inventário do pagante |
+| `initialPrice` | Taxa fixa somada a **todo** serviço |
+| `repairPrice` | Custo do reparo de motor |
+
+<Note>
+  O cálculo do preço total roda no servidor (`Core.SaveTemporaryTuning`), comparando o estado novo com o antigo do veículo e cobrando apenas o que mudou. O mecânico recebe `Bennys.PercentageMechanic`% desse total.
+</Note>
+
+---
+
+## config/engines.lua — Sons de motor
+
+Catálogo de sons de motor por addon. O índice `0` (`DEFAULT`) é o som original. A categoria "Som do Motor" e o preço são montados automaticamente no fim do arquivo.
+
+```lua
+Bennys.EngineSounds = {
+    [0] = { name = "Padrão",   model = "DEFAULT", price = 0 },
+    [1] = { name = "Honda K20", model = "k20a",   price = 10000 },
+    [2] = { name = "Skyline",   model = "rb26dett", price = 10000 },
+    -- ...
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `name` | Rótulo exibido no menu |
+| `model` | Nome do som no resource de addon de motor |
+| `price` | Preço do som |
+
+<Warning>
+  Os sons dependem de um **resource de sons de motor** instalado no servidor (os `model` precisam existir). Sem ele, apenas o som `DEFAULT` terá efeito audível.
+</Warning>
+
+---
+
+## config/language.lua — Textos
+
+Todos os textos e notificações do resource ficam em `Bennys.Language`. Traduza apenas os valores à direita; mantenha os `%s`/`%d`, que são substituídos em tempo de execução.
+
+```lua
+Bennys.Language = {
+    NotMechanicsInService = "Nenhum mecânico em serviço!",
+    NotInVehicle          = "Você não está em um veículo!",
+    MechanicAccepted      = "O mecânico %s aceitou o serviço e já está a caminho!",
+    ServiceFinished       = "Serviço finalizado com sucesso!",
+    -- ...
+}
+```

@@ -1,0 +1,100 @@
+---
+title: "Funções do Cliente (tvRP)"
+description: "Funções do lado cliente para manipulação local do ped, câmera, veículos e objetos, na tabela tvRP exposta via Tunnel."
+---
+
+Funções do lado **cliente** (manipulação local do ped, câmera, veículos, objetos). Estão em `resources/vrp/client/*.lua`, na tabela `tvRP`, exposta via Tunnel.
+
+Como chamar a partir do **servidor** (o primeiro argumento é sempre o `source` de destino):
+
+```lua
+local vRPC = Tunnel.getInterface("vRP")    -- em muitos recursos chamado vRPclient
+vRPC.SetHealth(source, 200)                -- espera retorno
+vRPC._SetHealth(source, 200)               -- fire-and-forget (sem retorno)
+```
+
+<Note>
+  As funções abaixo NÃO recebem `source` como parâmetro próprio, agem sobre o player local. O `source` só aparece porque o Tunnel o consome como destino quando a chamada parte do servidor.
+</Note>
+
+---
+
+## Referência por área
+
+<AccordionGroup>
+  <Accordion title="Player / Ped / Tela" icon="person">
+    | Função | Descrição |
+    | --- | --- |
+    | `tvRP.SetHealth(Health,Death)` | Define a vida do ped local. Se `Death`, chama `survival:Login()`. |
+    | `tvRP.UpgradeHealth(Number)` | Soma à vida (se vida \> 100). |
+    | `tvRP.DowngradeHealth(Number)` | Aplica dano ao ped. |
+    | `tvRP.ModelExist(Hash)` | `true` se o model está no CD image. |
+    | `tvRP.DoScreenFadeOut()` / `tvRP.DoScreenFadeIn()` | Fade out/in da tela. |
+    | `tvRP.PlayingAnim(Dict,Name)` | `true` se o ped está tocando aquela animação. |
+    | `tvRP.IsEntityInWater()` / `tvRP.IsPedSwimming()` | `true` se na água / nadando. |
+    | `tvRP.Skin(Hash)` | Aplica um model (skin) e recarrega o personagem. |
+    | `tvRP.ReloadCharacter()` | Reaplica as configurações do personagem. |
+  </Accordion>
+
+  <Accordion title="Animações e props nas mãos" icon="hands">
+    | Função | Descrição |
+    | --- | --- |
+    | `tvRP.playAnim(Upper,Sequency,Loop)` | Toca animação/cenário. `Sequency` = `{Dict,Name}` ou `{task="SCENARIO"}`. |
+    | `tvRP.stopAnim(Upper)` | Para a animação. |
+    | `tvRP.AnimActive()` | Zera a flag interna de animação ativa (libera o ped para uma nova animação). |
+    | `tvRP.CreateObjects(Dict,Anim,Prop,Flag,Hands,Height,...)` | Cria um prop em rede e anexa ao osso, opcionalmente tocando anim. |
+    | `tvRP.Destroy(Mode)` | Remove prop anexado e para animações (`"one"`/`"two"`). |
+    | `tvRP.PersistentBlock(Item,Animation)` | Registra animação persistente associada a um item. |
+    | `tvRP.PersistentNone(Item)` | Remove a animação persistente do item. |
+  </Accordion>
+
+  <Accordion title="Veículos próximos" icon="car">
+    | Função | Descrição |
+    | --- | --- |
+    | `tvRP.ClosestVehicle(Radius)` | `(entity, model)` do veículo mais próximo. |
+    | `tvRP.VehicleList(Radius)` | `(entity, netId, placa, model, classe)` do veículo em uso ou próximo. |
+    | `tvRP.VehicleName()` | Se em veículo: `(model, netId, placa)`; senão `false`. |
+    | `tvRP.VehicleModel(Vehicle)` | Nome do model de um veículo. |
+    | `tvRP.LastVehicle(Name)` | `true` se o último veículo bate com `Name`. |
+  </Accordion>
+
+  <Accordion title="Players próximos / som / utilidades" icon="volume-high">
+    | Função | Descrição |
+    | --- | --- |
+    | `tvRP.ClosestPeds(Radius)` | Lista de `source` (server ids) de players no raio. |
+    | `tvRP.ClosestPed(Radius)` | `source` do player mais próximo, ou `false`. |
+    | `tvRP.Players()` | Lista de players conhecidos pelo cliente (`GetPlayers()`). |
+    | `tvRP.PlaySound(Dict,Name)` | Toca um som de frontend. |
+    | `tvRP.BlipAdmin()` | Alterna a exibição de blips/ESP de admin. |
+  </Accordion>
+
+  <Accordion title="Spray / posicionamento de objetos" icon="spray-can">
+    | Função | Descrição |
+    | --- | --- |
+    | `tvRP.SprayExist(Distance)` | Permissão do spray dentro da distância, ou `false`. |
+    | `tvRP.ObjectControlling(Model,Rotate,Align)` | Modo interativo de posicionar um objeto. Retorna `(aplicou, {x,y,z,heading})`. |
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Handlers `tvRP` que vivem no servidor
+
+Chamáveis pelo cliente via `vRPS`. Estão na tabela `tvRP` do **servidor** (`modules/player.lua` e `inventory.lua`), invocados pelo cliente via `vRPS = Tunnel.getInterface("vRP")`:
+
+| Função | Descrição |
+| --- | --- |
+| `tvRP.CreateModels(Model,x,y,z,Type)` | Cria um ped no servidor; retorna o NetworkId. |
+| `tvRP.CreateObject(Model,x,y,z,Weapon,Component)` | Cria um objeto rastreado pelo Passport; retorna o NetworkId. |
+| `tvRP.Barbershop(Barbershop)` | Aplica os dados de aparência ao ped do chamador. |
+| `tvRP.invUpdate(Slot,Target,Amount)` | Move/mescla itens entre slots. |
+| `tvRP.DowngradeThirst()` / `tvRP.DowngradeHunger()` | Reduzem 1 ponto de sede/fome do chamador. |
+
+---
+
+## Observações
+
+<Info>
+  - Funções utilitárias globais (não `tvRP`) vêm de `lib/utils.lua`: `parseInt`, `splitString`, `SplitOne`, `GenerateString`, `Base64`, `HexToRGB`, `async`, `module`. São globais, não métodos de `vRP`/`tvRP`.
+  - Estados de player (`LocalPlayer.state.*` / `Player(source).state.*`), como `Passport`, `Active`, `Route`, `Banned`, `Handcuff`, sincronizam condição entre cliente e servidor.
+</Info>

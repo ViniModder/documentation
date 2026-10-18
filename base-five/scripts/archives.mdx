@@ -1,0 +1,61 @@
+---
+title: "archives"
+description: "Pasta-cofre gravável usada pelo vRP para salvar e ler arquivos de texto no servidor (ex.: `coordenadas.txt`, configs de corrida)."
+---
+
+O **archives** é uma pasta-cofre gravável usada pelo vRP para salvar e ler arquivos de texto no servidor (ex.: `coordenadas.txt`, configs de corrida).
+
+É um recurso "vazio" de propósito único: não possui scripts, apenas o `fxmanifest.lua`. Sua função é existir como um diretório de recurso gravável para que `vRP.Archive` consiga escrever/ler arquivos via natives do FiveM (`SaveResourceFile`/`LoadResourceFile`) apontando para o recurso `"archives"`. Todo arquivo gerado fica em `resources/[scripts]/archives/`.
+
+A função vive no vRP (`resources/vrp/modules/base.lua`):
+
+```lua
+function vRP.Archive(Archive,Text)
+	local Message = LoadResourceFile("archives",Archive)
+	SaveResourceFile("archives",Archive,(Message or "")..Text.."\n",-1)
+end
+```
+
+<Info>
+  **Comportamento:** lê o conteúdo atual, **acrescenta** `Text` ao final e regrava com `\n`. É sempre append, não sobrescreve.
+</Info>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="gears">
+    A API `vRP.Archive` é definida no core. Sem dependências declaradas no próprio `fxmanifest.lua`, só precisa estar iniciado no `server.cfg`.
+  </Card>
+</CardGroup>
+
+---
+
+## Exports / Uso
+
+Não expõe exports próprios. A leitura/escrita é feita pela função server-side do vRP.
+
+| Função | Parâmetros | Descrição |
+| --- | --- | --- |
+| `vRP.Archive(Archive, Text)` | `Archive` (nome do arquivo), `Text` (texto a anexar) | Lê o arquivo em `archives`, anexa `Text` \+ `\n` e regrava. |
+
+```lua
+vRP.Archive("coordenadas.txt", json.encode(Data))
+vRP.Archive(Passport..".txt", x..","..y..","..z..","..heading)
+```
+
+Usos reais: `admin/server-side/core.lua` (coords de doors, corridas, por passaporte) e `inventory/server-side/objects.lua` (coords de objetos colocados).
+
+---
+
+## Eventos
+
+Este recurso não registra eventos próprios.
+
+---
+
+## Customização
+
+- Sem config. Os `.txt` ficam em `resources/[scripts]/archives/`.
+- Apague os arquivos manualmente quando necessário (a função sempre faz append).

@@ -1,0 +1,194 @@
+---
+title: "mdt"
+description: "Terminal de dados policial (MDT) com NUI própria: ocorrências, código penal, prisões, multas, advertências, mandados, relatórios, corregedoria, veículos apreendidos, patrulhas, operações, medalhas, unidades, efetivo e banco do grupo."
+---
+
+O **mdt** é o software interno dos grupos policiais. A interface abre quando o servidor recebe `mdt:Open` com o nome do grupo (disparado pelo menu "Computador" do recurso `dynamic`, que mapeia `Militar`, `Civil`, `CORE`, `BOPE`, `PRF`). O servidor valida `vRP.HasPermission(Passport, Group)` e guarda o grupo ativo em `Permission[Passport]`.
+
+Toda comunicação NUI↔Lua usa Tunnel: o cliente expõe a interface `mdt` e cada `RegisterNUICallback` repassa para a função `Core.*` homônima no servidor. As descrições enviadas passam por sanitização (`<script>`, `on*=`). Com `five_logs` ativo, gera logs para prisão, multa, advertência, contratação, promoção/rebaixamento e demissão.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Código penal" icon="scale-balanced">
+    Seções e artigos editáveis que alimentam prisões e multas.
+  </Card>
+
+  <Card title="Penalidades" icon="gavel">
+    Prisões, multas e advertências com registro completo por cidadão.
+  </Card>
+
+  <Card title="Mandados e corregedoria" icon="file-shield">
+    Mandados de busca/prisão e processos internos da corregedoria.
+  </Card>
+
+  <Card title="Relatórios" icon="file-lines">
+    Criação, edição e arquivamento de relatórios policiais.
+  </Card>
+
+  <Card title="Efetivo e unidades" icon="users">
+    Contratação, hierarquia, demissão, unidades e patrulhas do grupo.
+  </Card>
+
+  <Card title="Operações" icon="map-location-dot">
+    Operações com locais configuráveis e limite de participantes.
+  </Card>
+
+  <Card title="Veículos apreendidos" icon="car-burst">
+    Registro de apreensões integrado a `five-vehicles`.
+  </Card>
+
+  <Card title="Banco do grupo" icon="building-columns">
+    Depósito, saque e transferência com taxas configuráveis.
+  </Card>
+
+  <Card title="Fotos via screenshot" icon="camera">
+    Avatares e fotos de veículo hospedados via `screenshot-basic`.
+  </Card>
+
+  <Card title="Permissões granulares" icon="lock">
+    Nível mínimo por funcionalidade, com sobrescrita por grupo.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="layer-group">
+    Permissões, Tunnel e export `Avatar`.
+  </Card>
+
+  <Card title="PolyZone" icon="draw-polygon">
+    Suporte de zonas.
+  </Card>
+
+  <Card title="oxmysql" icon="database">
+    Persistência das tabelas `mdt_creative_*`.
+  </Card>
+
+  <Card title="screenshot-basic" icon="camera">
+    Fotos de avatar e veículo.
+  </Card>
+
+  <Card title="five-vehicles" icon="car">
+    `updateVehicleStatus → ARRESTED`.
+  </Card>
+
+  <Card title="dynamic" icon="desktop">
+    Abertura da interface (`mdt:Open`).
+  </Card>
+
+  <Card title="five-modules" icon="puzzle-piece">
+    Consulta de placa.
+  </Card>
+</CardGroup>
+
+<Info>
+  **core\_logs** é _opcional_ — quando ativo, gera logs de prisão, multa, advertência, contratação, promoção/rebaixamento e demissão.
+</Info>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="shared-side/shared.lua — tabela Config" icon="gear">
+    | Chave | Padrão | Descrição |
+    | --- | --- | --- |
+    | `Group` | `"Policia"` | Grupo base do MDT. |
+    | `MaxFine` / `MaxArrest` | `100000` / `2500` | Valor máximo de multa / tempo de prisão. |
+    | `MaxReductionFine` / `MaxReductionArrest` | `100` / `100` | Redução máxima (%) enviada à NUI. |
+    | `BankTaxWithdraw` / `BankTaxTransfer` | `1.0` / `1.0` | Taxas de saque / transferência. |
+    | `Permissions` | tabela | Nível mínimo por funcionalidade. |
+    | `OtherPermissions` | tabela | Sobrescreve `Permissions` por grupo (ex.: `Civil`). |
+    | `OperationsLocations` | lista | Locais de operação (`Image`, `Name`, `Max`). |
+  </Accordion>
+
+  <Accordion title="Modelo de permissões" icon="lock">
+    `-1` = ninguém · `0` = todos · `N` = hierarquia `>= N`. Cobre Board, Firearms, Flyingarms, ClearRecord, Patrol, Operations, Arrest, Fine, Warning, PoliceReports, InternalAffairs, Wanted, SeizedVehicles, EditPenalCode, Medals, Units, Management e Bank.
+  </Accordion>
+
+  <Accordion title="Convar Discord_MDT" icon="discord">
+    **Convar:** `Discord_MDT` (`server.cfg`), webhook usado pelo `screenshot-basic` para hospedar as imagens. Obrigatória para essas funções.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Nenhum. A interface é aberta pela interação do recurso `dynamic` (`mdt:Open`).
+
+---
+
+## Exports
+
+Não declara exports próprios; consome `five-vehicles` (`updateVehicleStatus`), `vrp` (`Avatar`), `screenshot-basic`, `five_logs`.
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+Cliente e servidor expõem a interface `mdt` (`Tunnel.bindInterface("mdt", Core)`). Cada NUI callback repassa para a função `Core.*` homônima no servidor.
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+| --- | --- |
+| `mdt:Open` | Abre o MDT para o grupo informado; valida `vRP.HasPermission` e guarda o grupo em `Permission[Passport]`. |
+| `mdt:Vehicle` | Consulta a placa de um veículo (requer serviço `Policia`); responde via `mdt:Vehicle` no cliente. |
+
+### Cliente
+
+| Evento | Descrição |
+| --- | --- |
+| `mdt:Opened` | Abre a NUI e libera o foco/cursor. |
+| `mdt:Vehicle` | Recebe os dados da consulta de placa e os envia à NUI. |
+| `mdt:Refresh` | Dispara uma ação de atualização (`Action`) na NUI. |
+| `mdt:UpdateUser` | Atualiza os dados do cidadão exibido na NUI. |
+| `mdt:Notify` | Notificação interna (Título, Mensagem, Tipo). |
+
+### NUI Callbacks
+
+Cada callback chama a função `Core.*` correspondente no servidor via Tunnel.
+
+| Grupo | Callbacks |
+| --- | --- |
+| Sistema | `Close`, `Config`, `Home`, `UpdateBoard` |
+| Código penal | `PenalCode`, `CreatePenalCode`, `UpdatePenalCode`, `DestroyPenalCode`, `OrderPenalCode` |
+| Cidadão | `Player`, `SearchUser`, `User`, `Avatar`, `Firearms`, `Flyingarms`, `Record`, `ClearRecord`, `ClearRecords` |
+| Efetivo | `SearchOfficer`, `Officers`, `CreateOfficer`, `HierarchyOfficer`, `DismissOfficer` |
+| Patrulhas | `Patrol`, `GetPatrol`, `CreatePatrol`, `UpdatePatrol`, `DestroyPatrol` |
+| Operações | `Operations`, `GetOperation`, `CreateOperation`, `UpdateOperation`, `DestroyOperation`, `EscalatedOperation` |
+| Penalidades | `ArrestRecords`, `Arrest`, `Fine`, `Warning` |
+| Relatórios | `PoliceReports`, `GetPoliceReport`, `CreatePoliceReport`, `UpdatePoliceReport`, `ArchivePoliceReport` |
+| Mandados | `Wanted`, `GetWanted`, `CreateWanted`, `UpdateWanted`, `DestroyWanted` |
+| Corregedoria | `InternalAffairs`, `GetInternalAffairs`, `CreateInternalAffairs`, `UpdateInternalAffairs`, `ArchiveInternalAffairs` |
+| Veículos apreendidos | `SeizedVehicles`, `CreateSeizedVehicle` |
+| Medalhas | `Medals`, `GetMedal`, `CreateMedal`, `UpdateMedal`, `AssignMedal`, `RemoveMedal`, `DestroyMedal` |
+| Unidades | `Units`, `GetUnit`, `CreateUnit`, `UpdateUnit`, `AssignUnit`, `RemoveUnit`, `DestroyUnit` |
+| Banco do grupo | `Bank`, `DepositBank`, `WithdrawBank`, `TransferBank` |
+
+---
+
+## Banco de Dados
+
+Tabelas próprias `mdt_creative_*`: `penalcode_sections`, `penalcode_articles`, `arrest`, `fines`, `warning`, `wanted`, `reports`, `internalaffairs`, `vehicles`, `medals`, `units`, `board`. Compartilhadas: `avatars` (foto do cidadão), `painel_creative_transactions` (extrato do banco do grupo).
+
+<Note>
+  Patrulhas e Operações são mantidas **apenas em memória** (não persistem em banco).
+</Note>
+
+---
+
+## Customização
+
+- **Permissões por funcionalidade:** `Config.Permissions` / `Config.OtherPermissions[grupo]` (regra `-1`/`0`/`N`).
+- **Limites e taxas:** `MaxFine`, `MaxArrest`, reduções e taxas bancárias.
+- **Locais de operação:** `Config.OperationsLocations`.
+- **Grupos com acesso:** definidos no mapeamento do recurso `dynamic`.
+- **Webhook de imagens:** convar `Discord_MDT`.

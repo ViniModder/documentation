@@ -1,0 +1,264 @@
+---
+title: "five-crafting"
+description: "Sistema de fabricação (crafting) com interface NUI em React. Cria estações de craft no mapa, com receitas por categorias, restrições por grupo/rank do vRP, consumo de ingredientes, barra de progresso e log via webhook."
+---
+
+O **five-crafting** adiciona pontos de fabricação ("estações") pelo mapa. Cada estação é aberta por um sistema de interação configurável (`sleepless_interact`, `ox_target` ou marcador 3D), pode exigir um grupo/rank do vRP (ou ser pública) e disponibiliza uma ou mais **categorias de receitas**.
+
+Ao fabricar, o servidor valida permissão, limite de itens, peso e ingredientes; consome os ingredientes; dispara a barra de progresso; entrega o item e registra no webhook/`five_logs`. Toda manipulação de itens é via **vRP**, e o recurso **não acessa o banco diretamente**.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Estações no mapa" icon="map-pin">
+    Pontos de fabricação configuráveis, abertos por interação ou por evento.
+  </Card>
+
+  <Card title="Receitas por categoria" icon="list">
+    Receitas organizadas em categorias, com ingredientes, quantidade e tempo de fabricação.
+  </Card>
+
+  <Card title="Restrição por grupo/rank" icon="lock">
+    Estações podem exigir um grupo vRP e um nível mínimo, ou serem públicas.
+  </Card>
+
+  <Card title="Interação flexível" icon="wrench">
+    Suporte a `sleepless_interact`, `ox_target` ou marcador 3D nativo.
+  </Card>
+
+  <Card title="Barra de progresso" icon="bars-progress">
+    Validação de peso, limite e ingredientes com feedback visual durante o craft.
+  </Card>
+
+  <Card title="Log via webhook" icon="discord">
+    Registra cada fabricação no Discord e no `five_logs` quando ativo.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    Framework base (`@vrp/config/Item.lua` para `ItemName`, `ItemIndex`, etc.).
+  </Card>
+
+  <Card title="Sistema de interação" icon="hand-pointer">
+    Escolha em `Crafting.Interaction.System`: `sleepless_interact`, `ox_target` ou `marker` (nativo).
+  </Card>
+</CardGroup>
+
+<Info>
+  **core\_logs** é opcional; registra `"CRAFTOU"` se estiver ativo.
+</Info>
+
+---
+
+## Configuração
+
+Tudo em `config/config.lua` (webhooks em `config/webhooks.lua`).
+
+<AccordionGroup>
+  <Accordion title="Imagens e tema" icon="image">
+    ```lua
+    Crafting.Images = {
+        BaseUrl   = ItemsURL,   -- vem de vrp/config/Global.lua (cdn.fivenetwork.dev/Itens/)
+        Extension = ".png",
+    }
+    Crafting.ThemeColor = "#0143bb"  -- Theme.main tem prioridade
+    ```
+  </Accordion>
+
+  <Accordion title="Interação" icon="hand-pointer">
+    ```lua
+    Crafting.Interaction = {
+        System = "sleepless",      -- "sleepless" | "ox_target" | "marker"
+        AutoCloseDistance = 4.0,   -- distância para fechar o painel automaticamente
+        Sleepless = { Label = "Abrir Fabricação", Icon = "wrench", Distance = 2.0, ... },
+        OxTarget  = { Label = "Abrir Fabricação", Icon = "fa-solid fa-wrench", Radius = 1.0, ... },
+        Marker    = { Key = 38, Text = "~g~E~w~  ABRIR FABRICAÇÃO", Color = {1,67,187,160}, ... },
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Estações" icon="map-pin">
+    ```lua
+    Crafting.Stations = {
+        -- Estação com grupo + rank:
+        { Coords = vec3(412.64,8.11,84.74), Permission = "Municao1", Rank = 3, Modes = { "Municao" } },
+        -- Estação PÚBLICA (sem Permission/Rank):
+        { Coords = vec3(-248.67,-2208.34,9.89), Modes = { "LavagemPublica" } },
+    }
+    ```
+
+    | Campo | Descrição |
+    | --- | --- |
+    | `Coords` | Coordenada do ponto. **Obrigatório.** |
+    | `Permission` | Grupo vRP necessário. `nil` = pública. |
+    | `Rank` | Nível mínimo no grupo. `nil` = qualquer. |
+    | `Modes` | Lista de categorias de receitas (chaves de `Crafting.Recipes`). **Obrigatório.** |
+
+    <Note>
+      Uma estação pode listar várias categorias em `Modes` (a UI mostra a união).
+    </Note>
+  </Accordion>
+
+  <Accordion title="Receitas" icon="list">
+    `Crafting.Recipes` é uma tabela de **categorias**, cada uma com uma `List`. A **chave de cada receita é o spawn do item produzido**:
+
+    ```lua
+    Crafting.Recipes = {
+        Municao = {
+            List = {
+                caixapistolammo = {
+                    Amount = 1,                              -- quantidade produzida
+                    Time = 1,                                -- tempo de fabricação (segundos)
+                    Required = { polvorafarm = 50, capsula = 50 }  -- ingredientes
+                },
+            }
+        },
+    }
+    ```
+
+    Categorias de fábrica: `Armas`, `Parafal`, `Municao`, `Lavagem`, `Ilegal`, `Desmanche`, drogas (`LSD`, `Cocaina`, `Skunk`, etc.), `SodaPOP`, `Marina`, entre outras.
+
+    <Warning>
+      O servidor só inclui receitas cujo item de saída exista no `Item.lua` (`ItemExist`). **Cadastre o item no `Item.lua` do vRP antes de usá-lo numa receita.** A ordem das chaves no arquivo define a ordem na UI.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Webhooks" icon="discord">
+    ```lua
+    -- config/webhooks.lua
+    local webhookURLs = { fabricacao = "" }  -- URL do Discord; vazio = sem log
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+**Nenhum.** A abertura é pela interação configurada ou pelos eventos `five-crafting:open` / `five-crafting:close`.
+
+---
+
+## Localizações
+
+Estações definidas em `Crafting.Stations` (`config/config.lua`). Cada ponto cria uma interação (sleepless/ox\_target/marker). Total de 37 estações.
+
+| Local (grupo) | Coordenadas (x, y, z) | Tipo |
+| --- | --- | --- |
+| Munição 1 (Triade) | 412.64, 8.11, 84.74 | Estação (Municao, rank 3) |
+| Munição 2 (Fazenda) | 1471.08, 1118.69, 118.92 | Estação (Municao, rank 3) |
+| Munição 3 (Jetsam) | 826.05, -2925.15, 1.87 | Estação (Municao, rank 3) |
+| Munição 4 (Sinaloa) | -1810.19, 478.23, 108.22 | Estação (Municao, rank 3) |
+| Arma 1 (Globo) | -3695.05, 3789.86, 4.95 | Estação (Armas, rank 3) |
+| Arma 2 (Vinhedo) | -1918.07, 2064.76, 135.76 | Estação (Armas, rank 3) |
+| Arma 3 (Playboy) | -1545.09, 85.10, 53.67 | Estação (Armas, rank 3) |
+| Arma 4 (Casablanca) | -1563.40, 831.47, 177.02 | Estação (Armas, rank 3) |
+| Arma 5 (Yakuza) | -2288.97, -681.97, 20.08 | Estação (Armas, rank 3) |
+| Contrabando 1 (Distrito 14) | -690.21, 2698.25, 54.17 | Estação (Ilegal, rank 3) |
+| Contrabando 2 (Resort) | -2938.17, 34.73, 11.70 | Estação (Ilegal, rank 3) |
+| Contrabando 3 (Posto) | -2097.36, -347.56, 6.15 | Estação (Ilegal, rank 3) |
+| Contrabando 4 (Igreja) | -316.11, 6126.09, 14.08 | Estação (Ilegal, rank 3) |
+| Lavagem 1 (Jack Of Hearts) | 365.56, 240.98, 107.82 | Estação (Lavagem, rank 3) |
+| Lavagem 2 (Haute) | 4.25, 252.69, 101.15 | Estação (Municao, rank 3) |
+| Lavagem 3 (Vanilla Sul) | -669.95, -705.84, 30.47 | Estação (Lavagem, rank 3) |
+| Lavagem 4 (Vanilla Norte) | -296.44, 6262.85, 34.72 | Estação (Lavagem, rank 3) |
+| Desmanche 1 (Yellow Jack) | 1990.45, 3019.05, 47.51 | Estação (Desmanche, rank 3) |
+| Desmanche 2 (Racha Cranios) | 1189.77, -3286.16, 5.36 | Estação (Desmanche, rank 3) |
+| Desmanche 3 (Mansao Black) | -2798.17, 1461.40, 96.32 | Estação (Desmanche, rank 3) |
+| Desmanche 4 (Rising Sun) | -328.78, -161.67, 38.87 | Estação (Desmanche, rank 3) |
+| Metanfetamina 1 (Barragem/Demonike) | 1186.46, -17.24, 85.45 | Estação (Metanfetamina, rank 3) |
+| Metanfetamina 2 | -441.13, 1617.46, 360.72 | Estação (Metanfetamina, rank 3) |
+| Skunk 1 (Helipa/Juramento) | 1308.32, -797.37, 84.78 | Estação (Skunk, rank 3) |
+| Skunk 2 | -2198.12, 876.26, 229.83 | Estação (Skunk, rank 3) |
+| Cocaína 1 (Sinaloa/Mare) | 1571.70, -1316.31, 94.55 | Estação (Cocaina, rank 3) |
+| Cocaína 2 | -2480.95, -118.21, 54.98 | Estação (Cocaina, rank 3) |
+| Ecstasy 1 (MMDG/Vaticano) | -770.44, 1164.95, 280.60 | Estação (Ecstasy, rank 3) |
+| Ecstasy 2 | 2698.85, 1922.26, 54.55 | Estação (Ecstasy, rank 3) |
+| Heroína 1 (Santo Amaro) | -1214.19, 2448.75, 74.87 | Estação (Heroina, rank 3) |
+| Heroína 2 | -1347.15, 1468.05, 165.28 | Estação (Heroina, rank 3) |
+| Soda Pop | -1376.17, -1402.52, 5.57 | Estação (SodaPOP, rank 5) |
+| Kitty Café | 1137.00, -796.03, 58.41 | Estação (Kitty, rank 5) |
+| Moo Moo | -591.81, -1063.01, 22.59 | Estação (MooMoo, rank 5) |
+| Marina Lounge | 1537.56, 3795.58, 34.51 | Estação (Marina, rank 5) |
+| Osaka Sushi | -792.84, -154.72, 37.76 | Estação (Osaka, rank 5) |
+| Lavagem pública | -248.67, -2208.34, 9.89 | Estação pública (sem permissão) |
+
+---
+
+## Exports
+
+O recurso **não expõe exports próprios** (apenas consome `sleepless_interact`, `ox_target`, `five_logs`).
+
+---
+
+## Eventos
+
+Eventos de integração no cliente para abrir e fechar o painel de uma estação.
+
+| Evento | Parâmetros | Descrição |
+| --- | --- | --- |
+| `five-crafting:open` | `stationIndex` (number) | Abre o painel da estação cujo índice em `Crafting.Stations` é `stationIndex`. |
+| `five-crafting:close` | N/A | Fecha o painel. |
+
+```lua
+TriggerEvent("five-crafting:open", 1)  -- abre a 1ª estação da config
+```
+
+<Note>
+  O `stationIndex` é a posição numérica em `Crafting.Stations`. A permissão é revalidada no servidor.
+</Note>
+
+---
+
+## Banco de Dados
+
+**Nenhuma tabela.** Todo o estado (itens, peso, grupos) é gerenciado pelo vRP (`vRP.ItemAmount`, `vRP.TakeItem`, `vRP.GenerateItem`, `vRP.HasGroup`, etc.). Os itens das receitas precisam existir no `Item.lua`.
+
+---
+
+## Customização
+
+### Adicionar uma nova receita
+
+<Steps>
+  <Step title="Garanta os itens no Item.lua">
+    Garanta que o item produzido e os ingredientes existem no `Item.lua` do vRP.
+  </Step>
+  <Step title="Adicione a receita na categoria">
+    Em `Crafting.Recipes`, escolha a categoria e adicione em `List` (chave = spawn do produto):
+
+    ```lua
+    caixarifleammo = {
+        Amount = 1,
+        Time   = 5,
+        Required = { polvorafarm = 150, capsulafuzil = 150 }
+    }
+    ```
+  </Step>
+</Steps>
+
+### Adicionar categoria \+ estação
+
+<Steps>
+  <Step title="Crie a categoria">
+    Crie a categoria em `Crafting.Recipes` (com sua `List`).
+  </Step>
+  <Step title="Crie a estação">
+    Crie a estação em `Crafting.Stations` apontando em `Modes`:
+
+    ```lua
+    { Coords = vec3(100.0,200.0,30.0), Permission = "MeuGrupo", Rank = 1, Modes = { "MinhaCategoria" } }
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  - **Limite por craft:** UI limita 1–999 (`web-side/src/store/useCraftingStore.ts`); servidor força mínimo 1 e multiplica `Amount`/`Time`/`Required`.
+  - **Notificações:** tipos/cores em `config/functions.lua` (`NotifyTypes`).
+  - **Logs:** com `five_logs` ativo, cada craft gera log `"CRAFTOU"`.
+</Tip>

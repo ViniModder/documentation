@@ -1,0 +1,98 @@
+---
+title: "keyboard"
+description: "Sistema de diálogos de entrada (input) via NUI. Expõe a interface Tunnel `keyboard` para o servidor pedir texto, números, opções, sliders etc. ao jogador e receber o resultado de forma síncrona."
+---
+
+O **keyboard** é um recurso client-side que registra a interface Tunnel **`keyboard`** e abre um formulário NUI. A base é `Keyboard(Rows, Title, Subtitle, Cancel)`: ativa o foco, envia o payload e **bloqueia** até o jogador enviar, fechar ou clicar num botão.
+
+Sobre a tabela `Form` há presets prontos que montam as `Rows`. Cada um é publicado em dois canais: Tunnel `keyboard` (servidor→cliente) e exports locais. Cada `Row` tem `Mode` (`text`, `number`, `password`, `area`, `slider`, `options`, `button`), `Placeholder` e campos opcionais (`Value`, `Required`, `Min`/`Max`, `Options`, `Event`/`Params`).
+
+<Note>**Retorno:** tabela (array) com os valores na ordem das `Rows`. Retorna `false` se cancelado, se já havia outro form aberto, ou se algum campo veio vazio.</Note>
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Formulários NUI" icon="keyboard">
+    Abre diálogos de entrada com múltiplos campos diretamente na tela do jogador.
+  </Card>
+  <Card title="Chamada síncrona" icon="hourglass-half">
+    Bloqueia até o envio, fechamento ou clique em botão, retornando o resultado na hora.
+  </Card>
+  <Card title="Presets prontos" icon="list-check">
+    Funções `Form.*` montam as `Rows` automaticamente e viram método Tunnel e export.
+  </Card>
+  <Card title="Múltiplos modos de campo" icon="sliders">
+    `text`, `number`, `password`, `area`, `slider`, `options` e `button` em um só formulário.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="layer-group">
+    Comunicação via Tunnel.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Suporte de zonas.
+  </Card>
+</CardGroup>
+
+---
+
+## Uso (Tunnel)
+
+No servidor, obtenha a interface e chame o preset passando `source` como **primeiro argumento** (alvo do Tunnel):
+
+```lua
+local Tunnel    = module("vrp","lib/Tunnel")
+local vKEYBOARD = Tunnel.getInterface("keyboard")
+
+local Result = vKEYBOARD.Secondary(source, "Passaporte", "Quantidade")
+if Result then
+    local passport = Result[1]
+    local amount   = Result[2]
+end
+```
+
+Presets principais (retorno = array de inputs, ou `false`):
+
+| Função | Campos gerados |
+|---|---|
+| `Primary(First)` | 1x text |
+| `Secondary(First,Second)` | 2x text |
+| `Tertiary(...)` / `Quaternary(...)` | 3x text / 3x text + area |
+| `Area(First)` | 1x area |
+| `Password(Placeholder)` | 1x password |
+| `Options(First,Second)` | text + options |
+| `Copy(First,Message)` | area só-leitura (cópia) |
+| `Radio(Frequency,Volume)` | number + slider |
+| `Vehicle` / `Skins` / `Item` / `Spawn` / `Announce` / `Timeset` | combinações de text/options/area |
+
+<Note>`options` aceita lista de strings ou de objetos `{ Label, Value }`. `number` valida `> 0`; `Required` força preenchimento.</Note>
+
+---
+
+## Eventos
+
+Não registra eventos de rede. Expõe a interface Tunnel `keyboard` (`bindInterface`), cujos métodos são os presets de `Form.*` (ver **Uso (Tunnel)**), e três NUI callbacks:
+
+| Callback | Lado | Descrição |
+|---|---|---|
+| `Success` | NUI | Envio do formulário: guarda `Data.Inputs` como resultado e libera o foco. |
+| `Close` | NUI | Cancelamento: define o resultado como `false` e libera o foco. |
+| `Button` | NUI | Botão de ação: fecha o form e dispara `Data.Event` com `Data.Params`. |
+
+---
+
+## Customização
+
+- **Título/Subtítulo:** 2º/3º args (padrão `"Formulário"` / `"Preencha os campos abaixo"`).
+- **Ocultar Cancelar:** 4º arg `Cancel`.
+- **Cor:** global `Theme.main` (padrão `#0143bb`, aplicada via `--theme-color`).
+- **Novos formulários:** adicione uma função em `Form.*`, que vira automaticamente método Tunnel e export.
+
+<Tip>
+  Para criar um novo formulário reutilizável, basta adicionar uma função em `Form.*`: ela é publicada automaticamente como método Tunnel e como export local.
+</Tip>

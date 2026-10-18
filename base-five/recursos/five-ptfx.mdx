@@ -1,0 +1,121 @@
+---
+title: "five-ptfx"
+description: "Efeitos de partículas (PTFX) sincronizados por jogador, aplicáveis à arma, mãos e pés, controlados por NUI e protegidos por sistema de licença."
+---
+
+<Info>
+  **Recurso vendido separadamente.** O five-ptfx não acompanha a Base Five — ele é adquirido à parte na loja e adicionado ao servidor depois. Esta página serve para quem já comprou o recurso.
+</Info>
+
+O **five-ptfx** permite que jogadores com permissão apliquem auras de partículas sobre o próprio personagem em três categorias independentes (cada uma com 20 auras): `weapon` (arma empunhada), `hands` (mãos) e `feet` (pés). O efeito é guardado no servidor (cache por source) e sincronizado a todos via `five-ptfx:Sync`. Um loop reaplica o efeito a cada `RefreshInterval`.
+
+<Warning>
+  **Sistema de licença:** enquanto o script não autenticar, todas as funções de servidor ficam inertes. O token vai em `server/token.lua`.
+</Warning>
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Três categorias de auras" icon="wand-magic-sparkles">
+    Efeitos independentes para `weapon` (arma empunhada), `hands` (mãos) e `feet` (pés), com 20 auras cada.
+  </Card>
+
+  <Card title="Sincronização entre jogadores" icon="arrows-rotate">
+    O efeito é guardado no servidor (cache por source) e sincronizado a todos via `five-ptfx:Sync`.
+  </Card>
+
+  <Card title="Reaplicação por loop" icon="repeat">
+    Um loop reaplica o efeito a cada `RefreshInterval` (padrão 750 ms).
+  </Card>
+
+  <Card title="Proteção por licença" icon="lock">
+    Enquanto o script não autenticar, todas as funções de servidor ficam inertes.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={1}>
+  <Card title="vrp" icon="cube">
+    Framework base (`Passport`, `HasGroup`, `HasPermission`, `HasTable`). Sem banco.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — tabela Ptfx" icon="sliders">
+    ```lua
+    Ptfx.Command = "ptfx"          -- comando que abre a UI
+    Ptfx.Permission = "PTFX"       -- grupo p/ usar (aceita "Grupo@Nivel")
+    Ptfx.Hierarchy = nil           -- nível (usado em vRP.HasGroup)
+    Ptfx.ThemeColor = "#0143bb"    -- Theme.main tem prioridade
+    ```
+  </Accordion>
+
+  <Accordion title="server/token.lua — autenticação por licença" icon="lock">
+    Único arquivo a editar para autenticar.
+
+    ```lua
+    -- server/token.lua (ÚNICO arquivo a editar p/ autenticar)
+    License = ''   -- cole o token recebido na compra
+    ```
+  </Accordion>
+
+  <Accordion title="client/core.lua — performance e catálogo de auras" icon="list">
+    Em `client/core.lua`: `Ptfx.RefreshInterval = 750` (ms), `Ptfx.Bones` (ossos de mãos/pés). O catálogo de auras está em `Ptfx.Weapons`/`Ptfx.Hands`/`Ptfx.Feet` (cada entrada: `id`, `label`, `dict`, `name`, `size`).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+O recurso expõe um único comando, que abre a interface de seleção de efeitos.
+
+| Comando | Permissão | Descrição |
+| --- | --- | --- |
+| `/ptfx` | `vRP.HasGroup(passport, Ptfx.Permission, Ptfx.Hierarchy)` (grupo `PTFX`, nível `nil`) | Abre a UI de seleção de efeitos. Requer autenticação por licença. |
+
+---
+
+## Localizações
+
+Não há locais fixos no mundo. O recurso é global/UI: os efeitos de partículas são aplicados ao próprio personagem (categorias `weapon`/`hands`/`feet`) e sincronizados a todos os jogadores, sem NPCs, blips, lojas ou zonas.
+
+---
+
+## Exports
+
+Exports disponíveis para integração com outros recursos.
+
+```lua
+exports["five-ptfx"]:IsAuthenticated()         -- bool
+exports["five-ptfx"]:GetState(target)          -- { weapon, hands, feet }
+exports["five-ptfx"]:Apply(target, Category, AuraId)  -- aplica/remove (Category: weapon/hands/feet)
+exports["five-ptfx"]:Clear(target, Category)   -- remove
+```
+
+<Note>
+  `Apply`/`Clear` (exports) **não checam permissão** (só autenticação); as funções Tunnel `Core.Apply`/`Core.Clear` checam.
+</Note>
+
+---
+
+## Banco de Dados
+
+<Info>
+  Nenhum. Estado em memória (cache por source); limpo no `playerDropped`.
+</Info>
+
+---
+
+## Customização
+
+- **Catálogo de auras:** `Ptfx.Weapons`/`Hands`/`Feet` em `client/core.lua` (ids únicos por categoria).
+- **Permissão/comando:** `Ptfx.Permission`, `Ptfx.Hierarchy`, `Ptfx.Command`.
+- **Cor:** `Ptfx.ThemeColor`. **Performance:** `RefreshInterval`.

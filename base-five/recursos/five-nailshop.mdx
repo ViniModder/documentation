@@ -1,0 +1,146 @@
+---
+title: "five-nailshop"
+description: "Salão de manicure: design de unhas customizável (comprimento, cor, estampa, dedo), aplicado em tempo real nos dedos do jogador via bones, com assets próprios, sincronização entre jogadores e persistência em banco. Interface NUI."
+---
+
+O **five-nailshop** é um salão de manicure onde um jogador (manicure) abre o menu de design e cria unhas para outro (cliente) sentado numa cadeira do estúdio. Estúdios em `NailStudios` (com mesas `customer`/`employee`). Modo **público** (`job = false`: o próprio jogador senta e se atende) ou **convite** (`job = "..."`: o funcionário convida o cliente por ID). A interação é via `sleepless_interact`. Designs salvos são sincronizados por distância e persistidos.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Design de unhas" icon="hand-sparkles">
+    Comprimento, cor, estampa e dedo customizáveis, aplicados em tempo real nos dedos do jogador via bones.
+  </Card>
+
+  <Card title="Modos público e convite" icon="users">
+    Estúdio público (auto-atendimento) ou modo convite, onde o funcionário convida o cliente por ID.
+  </Card>
+
+  <Card title="Sincronização entre jogadores" icon="arrows-rotate">
+    Designs salvos são sincronizados por distância entre os jogadores próximos.
+  </Card>
+
+  <Card title="Persistência em banco" icon="database">
+    O design de cada jogador é salvo no banco e restaurado entre sessões.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="ox_lib" icon="box">
+    Obrigatório.
+  </Card>
+
+  <Card title="oxmysql" icon="database">
+    Obrigatório. Banco de dados.
+  </Card>
+
+  <Card title="vrp" icon="puzzle-piece">
+    Framework, via bridge.
+  </Card>
+
+  <Card title="sleepless_interact" icon="hand-pointer">
+    Interação no estúdio.
+  </Card>
+</CardGroup>
+
+<Info>
+  Notificação detectada automaticamente entre vários sistemas suportados.
+</Info>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/main.lua — Configurações principais" icon="sliders">
+    ```lua
+    Debug = false,
+    AutoRunSQL = true,        -- cria a tabela nailshop automaticamente
+    Locale = 'pt',            -- locales/: en, pt, tr
+    Target = 'auto',
+    Notify = 'auto',
+    
+    NailStudios = {
+        {
+            name = "Harem",
+            coords = vec3(217.09, -1544.95, 28.29),
+            job = false,       -- false = público | "nome_job" = modo convite
+            tables = {
+                {
+                    customer = { coords = vec4(...), cameraOffset = vec3(...), chairOffset = vec3(...) },
+                    employee = { coords = vec4(...), chairOffset = vec3(...) },
+                },
+            },
+        },
+    },
+    
+    BlipSettings = { sprite = 279, color = 8, scale = 0.7, name = "Estudio de Unhas" },
+    
+    FingerBones = { ['left_hand_1'] = 45, ['right_hand_5'] = 89, ... },  -- dedo → bone do ped
+    ```
+
+    <Warning>
+      **`Commands.reload_nails`** existe no config mas **não há comando registrado** nesta versão (sem efeito).
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+<Info>
+  Nenhum. A interação é inteiramente via `sleepless_interact` no estúdio.
+</Info>
+
+---
+
+## Localizações
+
+Definidas em `config/main.lua`. Há um único estúdio (`Harem`, público) com 4 mesas (cada mesa: cadeira do cliente `vec4` \+ cadeira do funcionário `vec4`) e um blip no estúdio. Coordenadas reais:
+
+| Local | Coordenadas | Tipo |
+| --- | --- | --- |
+| Estúdio Harem | `vec3(217.09, -1544.95, 28.29)` | Ponto do estúdio \+ blip (`BlipSettings`: sprite 279, cor 8, escala 0.7, "Estudio de Unhas") |
+| Mesa 1: cliente | `vec4(220.95503234863, -1545.1121826172, 28.290630340576, -53.0)` | Cadeira do cliente |
+| Mesa 1: funcionário | `vec4(219.01142883301, -1546.6011962891, 28.290410995483, 127.0)` | Cadeira do funcionário |
+| Mesa 2: cliente | `vec4(215.93556213379, -1548.935546875, 28.290410995483, -127.0)` | Cadeira do cliente |
+| Mesa 2: funcionário | `vec4(217.88572692871, -1547.4417724609, 28.290630340576, -53.0)` | Cadeira do funcionário |
+| Mesa 3: cliente | `vec4(213.08038330078, -1545.2966308594, 28.290410995483, -127.0)` | Cadeira do cliente |
+| Mesa 3: funcionário | `vec4(215.02543640137, -1543.806640625, 28.290630340576, -53.0)` | Cadeira do funcionário |
+| Mesa 4: cliente | `vec4(217.96156311035, -1541.3356933594, 28.290508270264, -53.0)` | Cadeira do cliente |
+| Mesa 4: funcionário | `vec4(216.04086303711, -1542.8074951172, 28.290288925171, -127.0)` | Cadeira do funcionário |
+
+<Note>
+  Há um segundo estúdio `Harem` (modo convite, `job = 'harem_nail'`) comentado no config: não está ativo.
+</Note>
+
+---
+
+## Exports
+
+```lua
+exports['five-nailshop']:isInNailShop()  -- bool: jogador está numa sessão do salão?
+```
+
+---
+
+## Banco de Dados
+
+<Note>
+  `nailshop` criada automaticamente (se `AutoRunSQL = true`): `identifier` (Passport) \+ `nail_data` (JSON do design por bone).
+</Note>
+
+---
+
+## Customização
+
+- **Estúdios/mesas:** `Config.NailStudios` (público com `job = false` ou convite com `job = "..."`).
+- **Blip:** `Config.BlipSettings`.
+- **Posicionamento das unhas:** `Config.FingerBones` (dedo→bone) \+ tabela `nailsPosition` em `client/cl_main.lua` (offset/rotação por comprimento).
+- **Idioma:** `Config.Locale` \+ arquivos em `locales/`.
+- **Assets:** modelos `.ydr`/`.ytd` em `stream/` (`qua_nail_<comprimento>_<estampa>`), declarados no `fxmanifest.lua`.

@@ -1,0 +1,75 @@
+---
+title: "Apresentação"
+sidebarTitle: "Five Radio"
+description: "Sistema de rádio multi-frequência com integração nativa ao pma-voice para servidores FiveM."
+---
+
+O **Five Radio** é um sistema de rádio multi-frequência para servidores FiveM com integração nativa ao **pma-voice** para transmissão de voz real. Cada frequência funciona como um canal de comunicação independente, com suporte a restrições de acesso por permissão, 18 animações sincronizadas e HUD de frequência ativa.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="999 Frequências" icon="signal">
+    Frequências de 1 a 999. Cada uma pode ser livre ou restrita a grupos específicos de jogadores.
+  </Card>
+
+  <Card title="Integração pma-voice" icon="microphone">
+    Voz real transmitida pelo pma-voice na frequência ativa, com efeito sonoro de rádio aplicado automaticamente.
+  </Card>
+
+  <Card title="18 Animações" icon="person-walking">
+    18 poses diferentes de segurar o rádio, incluindo animações com prop 3D sincronizado com outros jogadores.
+  </Card>
+
+  <Card title="Controle de Volume" icon="volume-high">
+    Ajuste de volume por rádio (0–100%) diretamente na interface, sincronizado com o pma-voice em tempo real.
+  </Card>
+
+  <Card title="Frequências Restritas" icon="lock">
+    Frequências que exigem permissão específica (ex: Admin, Polícia). A validação é feita server-side.
+  </Card>
+
+  <Card title="Indicador de Fala" icon="comments">
+    Jogadores na mesma frequência veem em tempo real quem está falando, com o nome destacado na interface.
+  </Card>
+
+  <Card title="HUD de Frequência" icon="bars">
+    HUD minimalista com a frequência ativa. Pode ser ativado ou desativado pelo próprio jogador.
+  </Card>
+
+  <Card title="Item Obrigatório" icon="walkie-talkie">
+    O acesso ao rádio exige que o jogador possua o item configurado no inventário (`RequiredItem`).
+  </Card>
+</CardGroup>
+
+---
+
+## Sistema de Frequências
+
+- Faixa configurável de **1 a 999**
+- Múltiplos jogadores podem estar na mesma frequência simultaneamente
+- Frequências restritas são validadas server-side via `Functions.hasPermission` — jogadores sem permissão recebem negação sem mensagem de erro na tela de outros
+- O jogador pode navegar entre frequências com **Page Up / Page Down** sem precisar abrir a interface
+
+---
+
+## Integração pma-voice
+
+O Five Radio integra nativamente com o **pma-voice** para transmitir a voz do jogador na frequência ativa. A versão do pma-voice fornecida com o script já contém todas as adaptações necessárias — substituir o pma-voice padrão pelo fornecido é o único passo adicional de instalação.
+
+A integração cuida automaticamente de:
+
+- Conexão e desconexão de canais de voz no pma-voice ao trocar de frequência
+- Aplicação do efeito sonoro de rádio no áudio recebido por outros jogadores
+- Sincronização da animação selecionada com o pma-voice quando o jogador fala
+
+---
+
+## Animações
+
+18 animações selecionáveis diretamente na interface. A preferência é salva localmente por jogador.
+
+| Tipo | Quantidade | Descrição |
+| --- | :-: | --- |
+| Genéricas | 2 | Animações nativas do GTA (radio chatter, holding radio) |
+| Custom (`pazeee@`) | 16 | Animações exclusivas com prop 3D em diferentes posições e ossos do personagem |

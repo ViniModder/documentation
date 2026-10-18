@@ -1,0 +1,80 @@
+---
+title: "Apresentação"
+description: "Conheça o Five Cases, o sistema de caixas com skins de celular para lb-phone, com loja, inventário, inspeção 3D e integração direta ao vRP."
+---
+
+O **Five Cases** é um sistema de loot boxes de skins visuais para o celular (lb-phone) em servidores FiveM. O jogador compra skins organizadas por coleção e raridade, guarda tudo no inventário, equipa a que quiser e vê o próprio celular mudar de aparência em jogo. Antes de comprar, dá pra inspecionar qualquer skin de perto em uma câmera dedicada, com zoom e rotaçãora inspecionar qualquer skin de perto em uma câmera dedicada, com zoom e rotação. Toda a lógica de compra, cooldown e persistência roda no servidor; o cliente só exibe o painel (NUI) e aplica o resultado no celular.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Catálogo por coleção" icon="layer-group">
+    Skins agrupadas por coleção (Bear, Care, Conque, Couple Zoo, Powerpuff, Animals, Wish, Y2K...) e por raridade, cada uma com preço e cor próprios.
+  </Card>
+
+  <Card title="Compra com saldo bancário" icon="building-columns">
+    A compra debita direto do saldo bancário do jogador via vRP, sem depender de uma moeda interna própria.
+  </Card>
+
+  <Card title="Inventário e equipar" icon="boxes-stacked">
+    O jogador guarda todas as skins compradas e equipa uma por vez. A skin equipada troca o modelo do celular em jogo.
+  </Card>
+
+  <Card title="Inspeção 3D" icon="cube">
+    Qualquer skin, comprada ou não, pode ser inspecionadaQualquer skin, comprada ou não, pode ser inspecionada de perto, com zoom e rotação livre pelo mouse.
+  </Card>
+
+  <Card title="Log de compras" icon="webhook">
+    Cada compra dispara um webhook configurável com jogador, skin, raridade e preço.
+  </Card>
+
+  <Card title="Funciona com qualquer celular" icon="mobile">
+    A skin substitui o modelo do celular independente da variação escolhida no lb-phone (iPhone, Samsung, etc.) — não depende de um aparelho específico.
+  </Card>
+</CardGroup>
+
+---
+
+## Como funciona
+
+<Steps>
+  <Step title="O jogador abre o painel">
+    Pelo comando `/cases` (configurável) ou pelo atalho de teclado.
+  </Step>
+  <Step title="Explora o catálogo">
+    Filtra por coleção, busca pelo nome e inspeciona qualquer skin de perto antes de decidirFiltra por coleção, busca pelo nome e inspeciona qualquer skin de perto antes de decidir.
+  </Step>
+  <Step title="Compra com o saldo bancário">
+    O preço é definido pela raridade da skin. A compra é validada e debitada no servidor.
+  </Step>
+  <Step title="Equipa a skin">
+    Ao equipar, o celular do jogador troca de modelo, posição e animação em jogo, através da integração com o lb-phone.
+  </Step>
+</Steps>
+
+---
+
+## Raridades
+
+Cada skin pertence a uma raridade, que define o preço e a cor exibida na interface.
+
+| Raridade | Preço padrão | Cor |
+| --- | --- | --- |
+| Comum | 250 | `#8696A0` |
+| Raro | 600 | `#53BDEB` |
+| Épico | 1500 | `#B084F5` |
+| Lendário | 4000 | `#F5B942` |
+
+<Note>
+  Preços e cores são configuráveis por raridade em `config/config.lua` e valem para todas as skins daquela raridade.
+</Note>
+
+---
+
+## Celular equipado
+
+A skin equipada é aplicada automaticamente sempre que o jogador entra no jogo ou o lb-phone reinicia, sem precisar reabrir o painel. Cada skin pode ter seu próprio offset, rotação e uma animação de "idle" exclusiva, tocada no próprio objeto do celular.
+
+<Note>
+  A troca visual do celular depende de um export adicional no lb-phone. Veja os detalhes em [Instalação](/five-cases/instalacao#integração-com-o-lb-phone).
+</Note>

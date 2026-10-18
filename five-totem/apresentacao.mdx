@@ -1,0 +1,80 @@
+---
+title: "Apresentação"
+description: "Sistema de autoatendimento para restaurantes em servidores FiveM."
+---
+
+O **Five Totem** é um sistema de totem de autoatendimento para restaurantes em servidores FiveM. Totens físicos são posicionados nos estabelecimentos, permitindo que jogadores comprem itens de forma autônoma — sem depender de funcionários atendendo. Cada restaurante tem seu próprio totem com estoque, preços e receita independentes.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Múltiplos Restaurantes" icon="store">
+    Configure quantos restaurantes precisar, cada um com totem, estoque, preços e permissões completamente independentes.
+  </Card>
+
+  <Card title="Painel Administrativo" icon="sliders">
+    Admins do restaurante gerenciam estoque, ajustam preços e acompanham o faturamento em tempo real diretamente no totem.
+  </Card>
+
+  <Card title="Bloqueio por Funcionários" icon="door-closed">
+    O totem fecha automaticamente para clientes quando detecta funcionários do restaurante em serviço dentro do raio configurado.
+  </Card>
+
+  <Card title="Saque de Receita" icon="money-bill-transfer">
+    O faturamento acumulado pode ser sacado como item de dinheiro ou depositado diretamente na conta bancária do admin.
+  </Card>
+
+  <Card title="3 Sistemas de Interação" icon="hand-pointer">
+    Suporte nativo a `sleepless_interact`, `ox_target` ou marcador 3D. Sem dependências obrigatórias além do sistema escolhido.
+  </Card>
+
+  <Card title="Sincronização em Tempo Real" icon="arrows-rotate">
+    Múltiplos jogadores vendo o mesmo totem recebem atualizações instantâneas de estoque e preço sem precisar fechar e reabrir o painel.
+  </Card>
+
+  <Card title="Webhooks Discord" icon="discord">
+    Auditoria completa de compras, reabastecimentos, saques e alterações de preço enviada para canais do Discord.
+  </Card>
+</CardGroup>
+
+---
+
+## Sistema de Estoque e Preços
+
+Cada restaurante possui uma lista de itens com estoque e preço gerenciáveis pelo admin. O estoque é compartilhado entre todos que acessam aquele totem.
+
+| Configuração | Descrição |
+| --- | --- |
+| `DefaultStock` | Estoque inicial de cada item ao criar o restaurante no banco |
+| `MaxStock` | Limite máximo de estoque por item |
+| `RequireItems` | Se `true`, o admin precisa ter o item no inventário para reabastecer |
+| `PriceRange.Min/Max` | Faixa de preço permitida ao alterar valores |
+
+---
+
+## Bloqueio por Funcionários
+
+Quando jogadores com a `ServicePermission` do restaurante estão online e dentro do raio configurado (`Blocking.Radius`), o painel de compras é bloqueado para clientes e a mensagem configurada em `Blocking.BlockedMessage` é exibida. Admins do restaurante continuam acessando o painel normalmente.
+
+<Note>
+  O bloqueio é global — aplica-se a todos os totens igualmente. Para desativar o bloqueio em um restaurante específico, defina `ServicePermission = false` naquela entrada.
+</Note>
+
+---
+
+## Sistemas de Interação
+
+| Sistema | Dependência | Descrição |
+| --- | --- | --- |
+| `sleepless` | `sleepless_interact` | Label flutuante com ícone e tecla de interação |
+| `ox_target` | `ox_target` | Zona esférica clicável com crosshair |
+| `marker` | nenhuma | Marcador 3D desenhado no chão com tecla configurável |
+
+---
+
+## Saque de Receita
+
+O faturamento do restaurante é acumulado a cada compra. O administrador pode sacar o valor de duas formas:
+
+- **Item de dinheiro** — define `Withdraw.Item = "dollars"` (ou o item correspondente): o valor é entregue como item no inventário do admin.
+- **Depósito bancário** — define `Withdraw.Item = nil`: o valor é depositado diretamente na conta bancária via `Functions.giveBankMoney`.

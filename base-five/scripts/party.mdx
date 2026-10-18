@@ -1,0 +1,125 @@
+---
+title: "party"
+description: "Sistema de grupos (party) com salas protegidas por senha e marcadores de localização compartilhados em tempo real entre os membros."
+---
+
+O **party** permite que jogadores criem ou entrem em salas temporárias (em memória), com dono, membros, nome e senha opcional. Membros da mesma sala colocam marcadores no mundo (raycast da câmera) visíveis para todos, cada um com cor própria derivada do passaporte. Salas têm id `DLDLDL`, limite `MaxMembersParty` (10), promoção automática de dono ao sair e remoção quando vazias. Marcadores expiram após `SecondsMarkers` e têm cooldown no cliente. Comunicação via Tunnel `party`.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Salas temporárias" icon="users">
+    Crie ou entre em salas com dono, membros, nome e senha opcional, mantidas em memória.
+  </Card>
+  <Card title="Marcadores compartilhados" icon="map-pin">
+    Coloque marcadores no mundo (raycast da câmera) visíveis para todos os membros da sala em tempo real.
+  </Card>
+  <Card title="Cor por passaporte" icon="palette">
+    Cada membro recebe uma cor própria derivada do passaporte (`Passport % #ColorList + 1`).
+  </Card>
+  <Card title="Gestão automática" icon="gears">
+    Promoção automática de dono ao sair, limite de membros e remoção da sala quando vazia.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    `vRP.Passport`, `FullName`, `Source`.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Zonas de área. Também usa `DoesEntityExist`, `GetEntityCoords`.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="shared-side/shared.lua — variáveis compartilhadas" icon="sliders">
+    | Variável | Padrão | Descrição |
+    |---|---|---|
+    | `SecondsMarkers` | `10` | Tempo de vida do marcador (s). |
+    | `DefaultDistance` | `25` | Raio padrão do export `DoesExist`. |
+    | `MaxMembersParty` | `10` | Máximo de membros por sala. |
+    | `ColorList` | 45 cores | Paleta; cor = `Passport % #ColorList + 1`. |
+  </Accordion>
+  <Accordion title="client-side/core.lua — render dos marcadores" icon="eye">
+    `MaxScale 0.012`, `MinScale 0.006`, `ScaleDistance 100.0`, `MarkerCooldown 1000`, `RenderDistance 500.0`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+| Comando | Tecla | Descrição |
+|---|---|---|
+| `Partys` | `G` | Abre a interface de grupos (bloqueado em veículo). |
+| `Markers` | botão do meio | Cria/remove um marcador (raycast); exige vida > 100. |
+
+---
+
+## Exports
+
+O script disponibiliza os exports abaixo.
+
+- **`Room(Passport, source, Radius, Max)`**: membros da sala do passaporte dentro de um raio em torno de `source`; retorna `Members, #Members`.
+- **`DoesExist(Passport, Players)`**: sem `Players`, retorna o id da sala (ou `false`); com `Players`, retorna a lista se houver ≥ N membros próximos (raio `DefaultDistance`).
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+O servidor expõe a interface `party` (`Tunnel.bindInterface("party", Core)`), consumida pelos NUI callbacks do cliente (`GetRooms`, `GetMembers`, `CreateRoom`, `EnterRoom`, `LeaveRoom`, `KickRoom`).
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+|---|---|
+| `party:MarkerAdd` | Cria/remove (toggle) o marcador do jogador nas coordenadas e propaga aos membros da sala. |
+| `Disconnect` | Remove o jogador da sala (promove novo dono ou apaga a sala se vazia). |
+
+### Cliente
+
+| Evento | Descrição |
+|---|---|
+| `party:Close` | Fecha a NUI. |
+| `party:MarkerAdd` | Cria o marcador de um membro (com cor própria por passaporte). |
+| `party:MarkerDelete` | Remove o marcador do membro indicado. |
+
+### NUI Callbacks
+
+| Callback | Descrição |
+|---|---|
+| `GetRooms` | Lista as salas disponíveis. |
+| `GetMembers` | Lista os membros da sala atual. |
+| `CreateRoom` | Cria uma sala (nome + senha opcional). |
+| `EnterRoom` | Entra em uma sala (valida senha/limite). |
+| `LeaveRoom` | Sai da sala atual. |
+| `KickRoom` | Remove um membro da sala (apenas dono). |
+| `Close` | Fecha a NUI. |
+
+---
+
+## Banco de Dados
+
+<Note>
+  Não usa banco. Salas, membros e marcadores ficam em memória no servidor, perdidos ao reiniciar o resource.
+</Note>
+
+---
+
+## Customização
+
+- **Limite de membros:** `MaxMembersParty`.
+- **Marcadores:** `SecondsMarkers` (expiração); `MarkerCooldown`/`RenderDistance`/`ScaleDistance`/`Min/MaxScale` (render).
+- **Distância do `DoesExist`:** `DefaultDistance`.
+- **Cores:** `ColorList` (seleção determinística por passaporte).
+- **Teclas:** `RegisterKeyMapping` (`Partys`=G, `Markers`=botão do meio).

@@ -1,0 +1,159 @@
+---
+title: "Exports"
+description: "Funções exportadas pelo Five Skins para integrar a moeda, os vouchers e as skins com outros scripts do servidor."
+---
+
+Os exports do Five Skins permitem que outros recursos consultem e movimentem a moeda interna, os vouchers e as skins dos jogadores. Todos os exports são **server-side**.
+
+<Note>
+  Os exports recebem o **passport** do jogador (identificador permanente), e não o `source`. Eles funcionam mesmo com o jogador offline, pois agem sobre o inventário salvo.
+</Note>
+
+---
+
+## Moeda interna
+
+Consulta e movimenta o saldo de SkinsCoins do jogador. Quando `globalConfig.useFrameworkCoins` está ligado, o saldo passa a ser o da moeda do servidor.
+
+```lua
+exports["five-skins"]:GetSkinsCoins(passport)          -- retorna o saldo atual
+exports["five-skins"]:GiveSkinsCoins(passport, valor)  -- credita
+exports["five-skins"]:RemoveSkinsCoins(passport, valor)-- debita, retorna false se não houver saldo
+exports["five-skins"]:SetSkinsCoins(passport, valor)   -- define o saldo
+```
+
+**Exemplo**
+
+```lua
+-- Recompensa de um evento: credita 500 da moeda interna
+local passport = vRP.Passport(source)
+exports["five-skins"]:GiveSkinsCoins(passport, 500)
+```
+
+---
+
+## Vouchers
+
+Consulta e movimenta os vouchers usados na taxa das trocas.
+
+```lua
+exports["five-skins"]:GetVouchers(passport)          -- retorna a quantidade atual
+exports["five-skins"]:GiveVouchers(passport, valor)  -- credita
+exports["five-skins"]:RemoveVouchers(passport, valor)-- debita
+exports["five-skins"]:SetVouchers(passport, valor)   -- define a quantidade
+```
+
+---
+
+## GiveSkin
+
+Entrega uma skin ao jogador. Use `days` para entregar como temporária ou deixe `0`/`nil` para permanente.
+
+```lua
+local ok = exports["five-skins"]:GiveSkin(passport, skinId, days, amount)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | Identificador permanente do jogador |
+| `skinId` | `string` | `id` da skin no catálogo (`config/weapons.lua`) |
+| `days` | `number` | Dias de validade. `0` ou `nil` entrega permanente |
+| `amount` | `number` | Quantidade a entregar. `nil` entrega 1 |
+
+**Retorno:** `boolean`. `true` se a skin foi entregue; `false` em parâmetro inválido ou skin inexistente.
+
+**Exemplo**
+
+```lua
+-- Entrega uma skin temporária de 7 dias
+exports["five-skins"]:GiveSkin(passport, "AK_Storm", 7, 1)
+```
+
+---
+
+## RemoveSkin
+
+Remove uma skin do inventário do jogador.
+
+```lua
+local ok = exports["five-skins"]:RemoveSkin(passport, skinId, amount)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | Identificador permanente do jogador |
+| `skinId` | `string` | `id` da skin a remover |
+| `amount` | `number` | Quantidade a remover. `nil` remove tudo |
+
+**Retorno:** `boolean`. `true` se algo foi removido; `false` se o jogador não tinha a skin.
+
+---
+
+## HasSkin
+
+Consulta se o jogador possui uma skin e, no caso de temporária, a validade restante.
+
+```lua
+local info = exports["five-skins"]:HasSkin(passport, skinId)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | Identificador permanente do jogador |
+| `skinId` | `string` | `id` da skin a consultar |
+
+**Retorno:** `false` se o jogador não possui a skin, ou uma tabela com os campos abaixo.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `owned` | `boolean` | Sempre `true` quando a tabela é retornada |
+| `permanent` | `boolean` | `true` se a skin não tem prazo de validade |
+| `expiresAt` | `number` | Momento de expiração, ausente se permanente |
+| `daysLeft` | `number` | Dias restantes, ausente se permanente |
+
+**Exemplo**
+
+```lua
+local info = exports["five-skins"]:HasSkin(passport, "AK_Storm")
+if info and info.permanent then
+    -- o jogador tem a skin de forma permanente
+end
+```
+
+---
+
+## Integração com o inventário
+
+Usados pelo resource `inventory` para aplicar a skin certa na arma do jogador.
+
+```lua
+exports["five-skins"]:GetWeaponSkin(passport, weaponName) -- skin equipada para a arma
+exports["five-skins"]:GetBaseWeapon(weaponName)           -- arma base de uma skin
+```
+
+---
+
+## Exemplo de integração
+
+Entrega uma skin temporária e credita a moeda interna ao concluir um objetivo no servidor.
+
+```lua
+-- server-side, em outro script
+RegisterNetEvent("meuEvento:objetivoConcluido", function()
+    local src = source
+    local passport = vRP.Passport(src)
+    if not passport then return end
+
+    -- Skin temporária de 30 dias como recompensa
+    exports["five-skins"]:GiveSkin(passport, "AK_Storm", 30, 1)
+
+    -- Bônus na moeda interna
+    exports["five-skins"]:GiveSkinsCoins(passport, 250)
+end)
+```

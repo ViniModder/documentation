@@ -1,0 +1,86 @@
+---
+title: "Instalação"
+description: "Passo a passo para instalar e configurar o Five Skins no seu servidor FiveM."
+---
+
+## Dependências
+
+Inicie os recursos abaixo antes do Five Skins.
+
+<CardGroup cols={2}>
+  <Card title="Base Five (vRP)" icon="cube">
+    Framework base. Fornece identidade do jogador, permissões, banco de dados e o saldo usado quando a economia roda pela moeda do servidor. A integração fica isolada em `config/framework.lua`.
+  </Card>
+
+  <Card title="oxmysql" icon="database">
+    Acesso ao banco de dados onde ficam o inventário, o histórico e as trocas.
+  </Card>
+
+  <Card title="inventory" icon="boxes-stacked">
+    Aplica a skin equipada na arma. Sem ele a skin é registrada no inventário, mas não aparece em mãos.
+  </Card>
+
+  <Card title="five_logs (opcional)" icon="file-lines">
+    Registra as ações administrativas quando está iniciado.
+  </Card>
+</CardGroup>
+
+<Info>
+  As tabelas do banco são criadas automaticamente na primeira inicialização. Não é necessário rodar nenhum SQL manual.
+</Info>
+
+---
+
+## Instalação do Recurso
+
+<Steps>
+  <Step title="Copie a pasta do recurso">
+    Coloque a pasta `five-skins` dentro do diretório de recursos do seu servidor (por exemplo `resources/[five]/`).
+  </Step>
+  <Step title="Informe o token de licença">
+    Abra o arquivo `token.lua` na raiz do recurso e substitua pelo token recebido na compra.
+
+    ```lua token.lua
+    exports('license', function ()
+        return 'SEU-TOKEN-AQUI'
+    end)
+    ```
+  </Step>
+  <Step title="Cadastre as skins e as caixas">
+    Defina o catálogo de skins em `config/weapons.lua` e monte as caixas em `config/cases.lua`. Veja os detalhes na página de [Configuração](/five-skins/configuracao).
+  </Step>
+  <Step title="Ajuste a economia e os textos">
+    Edite `config/config.lua` para definir comandos, moeda, períodos de compra, trocas, aprimoramento, teste de armas e mensagens.
+  </Step>
+  <Step title="Adicione à server.cfg">
+    Inicie o recurso depois das dependências.
+
+    ```text
+    ensure vrp
+    ensure oxmysql
+    ensure five-skins
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  O painel é entregue já compilado em `web/`, pronto pra uso. Não é necessário nenhum passo de build.
+</Note>
+
+---
+
+## Integração com o inventário
+
+A skin equipada só aparece na arma quando o resource `inventory` está iniciado. O Five Skins informa ao inventário qual skin o jogador tem ativa, e o inventário aplica o componente ou a arma alternativa correspondente.
+
+Se o `inventory` não estiver presente, o sistema continua funcionando para abrir caixas, comprar, vender e trocar, mas a skin não fica visível em mãos.
+
+---
+
+## Adaptação de Framework
+
+A comunicação com o framework fica concentrada em `config/framework.lua`. O arquivo já vem pronto para a base Five Network (vRP). Caso a sua base use nomes diferentes, ajuste apenas o conteúdo dessas funções, mantendo o nome e o retorno esperado.
+
+<Note>
+  Você só precisa editar os arquivos em `config/`. Os demais arquivos contêm a lógica do sistema e não devem ser alterados.
+</Note>

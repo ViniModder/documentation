@@ -1,0 +1,7 @@
+<svg width="320" height="70" viewBox="0 0 320 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0, 5) scale(0.05359)">
+    <path d="M569.5 0H416V112H230.5L0 344V774L230.5 1006.5H407V756.5H319L189.5 626.5V493L320 362.5H569.5V0Z" fill="#0143BB"/>
+    <path d="M696 1119.5H542V756H791.5L920.5 627V491L792.5 362.5H705.5L705 112.5H881L1111.5 343.5V774.5L880.5 1007H696V1119.5Z" fill="#0143BB"/>
+  </g>
+  <text x="76" y="45" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="26" font-weight="600" fill="#0143BB" letter-spacing="-0.5">Core Network</text>
+</svg>

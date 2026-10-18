@@ -1,0 +1,123 @@
+---
+title: "dynamic"
+description: "Sistema central de menu de interação (radial/contexto) da base. Traz o menu pessoal (F9), o menu emergencial (F10) e uma API de exports consumida por dezenas de recursos para registrar menus e botões em runtime."
+---
+
+O **dynamic** fornece uma NUI única de menu que qualquer recurso preenche em tempo de execução. O fluxo é sempre: empilhar (stage) itens com `AddMenu`/`AddButton` e chamar `Open` para exibir. Ao clicar num botão, o menu fecha e dispara o evento configurado (cliente ou servidor). Ao fechar, o estado interno é resetado, portanto **os itens devem ser registrados de novo a cada abertura**.
+
+O cliente monta uma árvore (`BuildTree`): itens `menu` viram submenus e `button` viram ações, ligados por `Id`/`ParentId`.
+
+## Funcionalidades
+
+O recurso já inclui menus prontos.
+
+<CardGroup cols={3}>
+  <Card title="F9 — Menu pessoal" icon="user">
+    `PlayerFunctions`: Armário, Roupas, Veículo/Portas, **Computador** (painéis de grupos/MDT/EMS) e Outros.
+  </Card>
+
+  <Card title="F10 — Menu emergencial" icon="truck-medical">
+    `EmergencyFunctions`: menu para Polícia/Médico (10-codes, fardamentos).
+  </Card>
+
+  <Card title="H — Agarrar jogador" icon="hand">
+    `GrabPlayer`: agarra a pessoa mais próxima (Polícia/Médico).
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="server">
+    Proxy/Tunnel e configs.
+  </Card>
+
+  <Card title="PolyZone" icon="draw-polygon">
+  </Card>
+</CardGroup>
+
+<Info>
+  Tunnels usados pelos menus prontos: `skinshop`, `keyboard`. Lê as globais `Groups` (menu Computador) e `Theme` (cor).
+</Info>
+
+---
+
+## Exports
+
+Todos **client-side**. Empilhe os itens e chame `Open`.
+
+<AccordionGroup>
+  <Accordion title="AddMenu(Title, Description, Id, ParentId, Icon)" icon="folder">
+    Cria um submenu (agrupador). `Id` é a chave usada como `ParentId` dos filhos. `Icon` opcional (FontAwesome, padrão `fas fa-folder`).
+  </Accordion>
+
+  <Accordion title="AddButton(Title, Description, Trigger, Param, ParentId, Server, Back, Icon, Image)" icon="square-plus">
+    Cria um botão de ação.
+
+    - `Trigger`: evento disparado ao clicar (`""` = botão só informativo).
+    - `Param`: argumento único enviado ao evento.
+    - `ParentId`: `Id` do menu pai (`false`/`""` = raiz).
+    - `Server`: `true` → `TriggerServerEvent`; `false`/ausente → `TriggerEvent` (cliente).
+    - `Back`, `Icon`, `Image` opcionais.
+
+    ```lua
+    exports.dynamic:AddMenu("Domésticos","Funções dos animais.","animal")
+    exports.dynamic:AddButton("Primário","Esvaziar compartimento.","moneywash:Money",Selected,false,true)
+    exports.dynamic:Open()
+    ```
+  </Accordion>
+
+  <Accordion title="Open() / Close()" icon="window-restore">
+    Renderiza/exibe a NUI / fecha e reseta o estado empilhado.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Eventos
+
+A interface Tunnel `bindInterface("dynamic", Core)` (servidor) expõe `Core.Clothes()` (lista os fardamentos/roupas salvos do jogador, com limite por permissão) e `Core.Save()` (persiste a roupa atual no armário pessoal).
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+| --- | --- |
+| `dynamic:Tencode` | Dispara um 10-code (`Number`) para a Polícia em serviço (som \+ `NotifyPush` com blip). |
+| `dynamic:Clothes` | Aplica/gerencia uma roupa do armário pessoal conforme o `Mode`. |
+| `Disconnect` | Limpa o contador de roupas (`CountClothes`) do jogador ao desconectar. |
+
+### Cliente
+
+| Evento | Descrição |
+| --- | --- |
+| `dynamic:AddMenu` | Empilha um submenu na árvore (`Title`, `Description`, `Id`, `ParentId`, `Icon`). |
+| `dynamic:AddButton` | Empilha um botão de ação na árvore (com `Trigger`, `Param`, `Server` etc.). |
+| `dynamic:Close` | Fecha a NUI e reseta o estado empilhado. |
+
+### NUI Callbacks
+
+| Callback | Descrição |
+| --- | --- |
+| `post:closeUi` | Fecha a interface e remove o foco NUI. |
+| `get:colors` | Retorna a cor do tema (`Theme.main`) para a UI. |
+| `triggerAction` | Dispara o evento do botão clicado (cliente ou servidor) e fecha o menu. |
+
+---
+
+## Customização
+
+<CardGroup cols={3}>
+  <Card title="Cor" icon="palette">
+    Global `Theme.main` (fallback `#0143bb`).
+  </Card>
+
+  <Card title="Teclas" icon="keyboard">
+    `RegisterKeyMapping` (F9, F10, H), reconfiguráveis pelo jogador.
+  </Card>
+
+  <Card title="Menus prontos / 10-codes" icon="list">
+    Definidos inline em `client-side/core.lua` e `server-side/core.lua` (tabela `Codes`).
+  </Card>
+</CardGroup>

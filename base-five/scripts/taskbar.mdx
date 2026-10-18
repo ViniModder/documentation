@@ -1,0 +1,82 @@
+---
+title: "taskbar"
+description: "Utilitário de NUI que exibe um skill-check (minigame de habilidade por tempo) e retorna se o jogador teve sucesso. Consumido por outros recursos para validar ações."
+---
+
+Apesar do nome, o **taskbar** é um **minigame de habilidade** client-side. Ao ser acionado, um ponteiro gira ao redor de um arco e o jogador deve pressionar a tecla correta (`1`, `2`, `3` ou `4`) enquanto o ponteiro estiver na zona-alvo. A chamada é **bloqueante**: retorna `true` em acerto e `false` em erro/timeout.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Skill-check em NUI" icon="bullseye">
+    Ponteiro gira ao redor de um arco e o jogador acerta a tecla na zona-alvo.
+  </Card>
+  <Card title="Chamada bloqueante" icon="hourglass-half">
+    Retorna `true` em acerto e `false` em erro/timeout, pronto para validar ações.
+  </Card>
+  <Card title="Alvo aleatório" icon="shuffle">
+    A cada rodada o alvo (tecla e ângulo) é sorteado.
+  </Card>
+  <Card title="Dificuldade ajustável" icon="gauge-high">
+    O parâmetro de velocidade define a duração da animação; menor = mais rápido/difícil.
+  </Card>
+</CardGroup>
+
+<Info>
+  Recurso autocontido: sem pasta `config/` nem lado servidor.
+</Info>
+
+---
+
+## Dependências
+
+<Card title="vRP" icon="server">
+  `@vrp/lib/Utils.lua` (Tunnel + tema visual do recurso `vrp`).
+</Card>
+
+---
+
+## Exports / Uso
+
+Export client-side **`Task`**, que executa o minigame `Amount` vezes em sequência; se qualquer rodada falhar, interrompe e retorna `false`.
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `Amount` | number | Quantidade de minigames em sequência. |
+| `Speed` | number | Velocidade/dificuldade (duração da animação). |
+
+**Retorno:** `boolean`.
+
+```lua
+local sucesso = exports["taskbar"]:Task(3, 80)
+if sucesso then
+    -- ação concluída
+end
+```
+
+<Note>Também exposto pela interface Tunnel `taskbar` (método `Task`).</Note>
+
+---
+
+## Eventos
+
+Expõe a interface Tunnel `taskbar` (cliente), com o método `Task` (ver seção Exports / Uso).
+
+### NUI Callbacks
+
+| Callback | Descrição |
+|---|---|
+| `Success` | A NUI sinaliza acerto na rodada do minigame. |
+| `Failure` | A NUI sinaliza erro/timeout na rodada do minigame. |
+
+---
+
+## Customização
+
+- **Cores:** variáveis CSS `:root` em `web-side/style.css`; tema também carregado do recurso `vrp`.
+- **Teclas:** fixas em `1`–`4`.
+- **Dificuldade:** parâmetro `Speed` em runtime.
+
+<Tip>
+  Para um skill-check mais difícil, reduza o valor de `Speed` na chamada do export.
+</Tip>

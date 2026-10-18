@@ -1,0 +1,204 @@
+---
+title: "hud"
+description: "HUD principal: status do jogador (vida, colete, fome, sede, stamina, stress, oxigênio), velocímetro/painel veicular, minimapa, chat com tags de grupo, `/me`, post-it, notificações, despacho policial, rádio, radar, cinto, nitro e controle global de horário/clima via GlobalState."
+---
+
+O **hud** é o recurso de interface (NUI React) que centraliza quase todo o HUD do servidor: status de sobrevivência, painel veicular, minimapa, chat, notificações, despacho policial, rádio, radar e controle global de horário/clima.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Status e Sobrevivência" icon="heart-pulse">
+    Calcula e envia vida/colete/fome/sede/stamina/stress/oxigênio; dano por fome/sede baixa; efeito de stress; andar ferido com vida baixa.
+  </Card>
+
+  <Card title="Tempo e Clima Globais" icon="clock">
+    O servidor mantém `GlobalState.Hours/Minutes/Weather` (relógio avança 1 min de jogo a cada 10s reais). O `/timeset` ajusta.
+  </Card>
+
+  <Card title="Painel Veicular" icon="gauge-high">
+    Velocímetro, RPM, marcha, combustível, nitro, pneus, drift e cinto.
+  </Card>
+
+  <Card title="Chat" icon="comments">
+    Canais de grupo \+ OOC (proximidade) \+ Polícia, `/me` e post-it.
+  </Card>
+
+  <Card title="Minimapa" icon="map">
+    Minimapa com tradução de nomes de ruas e ajustes de fixação/ângulo.
+  </Card>
+
+  <Card title="Notificações e Despacho" icon="bell">
+    Notificações, despacho policial, rádio e radar de velocidade.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+</CardGroup>
+
+<Info>
+  Globais lidas de `@vrp/config/Global.lua`: `Groups`, `Theme`, `ItemsURL`, `WantedSystem`, `Assault*`. Opcionais: `five_logs` (TIMESET), `five-skins`.
+</Info>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — tabela hudConfig" icon="sliders">
+    ```lua
+    hungerThirst = true, hungerValue = 100, thirstValue = 100,
+    pinTheMinimap = false,   -- minimapa sempre visível
+    setMiniMapBelt = false,  -- trava o ângulo do minimapa
+    itemsUrl = ItemsURL, armoryUrl = ItemsURL,   -- CDN de imagens
+    logoUrl = "https://.../logo.gif",
+    modifyStreetNames = true,
+    modifyStreets = { ["Paleto Boulevard"] = "Av. Senador Feijó", ... },  -- tradução de ruas
+    offensiveWord = { "...", ... },              -- palavras bloqueadas no chat
+    anuncios = {                                  -- anúncios em painel por "código/cor"
+        ["hospital"] = { title = "Hospital", icon = "fa-solid fa-heart-pulse", color = "#6fd7ac", time = 20000 },
+        ["policia"]  = { title = "Polícia", ... },
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="config/weapons.lua — hudConfig.weapons" icon="gun">
+    Mapeia hash da arma → `name` \+ `index` (imagem).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+| Comando / keymap | Tecla padrão | Descrição |
+| --- | --- | --- |
+| `/timeset` | N/A | (Admin nível 2) define hora/minuto/clima globais. |
+| `/hud` | N/A | Abre o menu de configurações do HUD. |
+| `/me <texto>` | N/A | Ação `/me` flutuante (proximidade). |
+| `ChatEvent` | T | Abre o chat. |
+| `toggleRadar` | N | Liga/desliga o radar de velocidade. |
+| `toggleFreeze` | M | Congela/descongela a leitura do radar. |
+| `Seatbeltz` | G | Coloca/retira o cinto. |
+| `+activeNitro` | Alt esq. (LMENU) | Nitro (segurar). |
+| `AcceptRequest` | Y | Aceita o pedido (caixa de `request`). |
+| `RefuseRequest` | U | Recusa o pedido (caixa de `request`). |
+| `hudpolicehistory` | F2 | Abre o histórico de despachos policiais. |
+
+<Note>
+  Comandos de teste: `/testnotify`, `/testnotifyitem`, `/testnotifypolice`, `/testnotifyrequest`.
+</Note>
+
+---
+
+## Exports
+
+```lua
+-- server:
+exports.hud:Postit(Passport, Coords, Reason, Seconds)
+exports.hud:Repose(Passport)   -- em repouso?
+exports.hud:Wanted(Passport)   -- procurado?
+-- client:
+exports.hud:Wanted()  exports.hud:Repose()   -- jogador local (notifica tempo restante)
+```
+
+---
+
+## Eventos
+
+O `hud` ouve dezenas de eventos. Abaixo, agrupados por realm e finalidade.
+
+### Interfaces Tunnel
+
+| Interface | Realm | Uso |
+| --- | --- | --- |
+| `hud` | servidor \+ cliente | funções `vHUD` chamadas por outros recursos (status, gemstone, vídeo, etc.). |
+| `chat` | servidor | envio de mensagens ao chat. |
+| `request` | cliente | caixa de pedido sim/não, `Core.Function(Title, Message, Timeout)`. |
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+| --- | --- |
+| `Wanted` | Marca/atualiza o jogador como procurado. |
+| `Repose` | Coloca o jogador em repouso (após ser ferido). |
+| `chat:ServerMessage` | Envia uma mensagem ao chat de todos. |
+| `hud:VehicleEject` | Ejeta o jogador do veículo (spike/colisão). |
+| `Connect` / `Disconnect` | Restaura/limpa os timers de procurado, repouso e post-its. |
+
+### Cliente: status e sobrevivência
+
+| Evento | Descrição |
+| --- | --- |
+| `hud:Active` | Mostra/oculta todo o HUD. |
+| `hud:Hunger` / `hud:Thirst` / `hud:Stress` | Define os valores de fome / sede / stress. |
+| `Hunger` / `Thirst` | Aplica o consumo gradual de fome / sede. |
+| `Progress` | Exibe a barra de progresso. |
+
+### Cliente: notificações
+
+| Evento | Descrição |
+| --- | --- |
+| `Notify(Title, Message, Color, Timer)` | Notificação padrão (cor que casa com `anuncios` vira painel). |
+| `inventory:Notify` / `inventory:NotifyItem` | Notificação de inventário / com ícone de item. |
+| `NotifyPush` | Despacho policial (chamada com local). |
+
+### Cliente: veículo, radar e voz
+
+| Evento | Descrição |
+| --- | --- |
+| `hud:Radar` / `hud:Radaroff` / `hud:RadarExpire` | Liga / desliga / expira o radar de velocidade. |
+| `hud:Weapon` | Atualiza a arma exibida no HUD. |
+| `hud:Hood` | Liga/desliga o capuz/venda na tela. |
+| `spikes:Adicionar` / `spikes:Remover` | Faixas de pregos (spikes). |
+| `hud:Voip` / `hud:Voice` | Indicador de voz/alcance. |
+| `radio:Connect` / `radio:Disconnect` / `client:pessoafalando` | Indicador de rádio e de quem está falando. |
+
+### Cliente: procurado, menu e dominação
+
+| Evento | Descrição |
+| --- | --- |
+| `hud:Wanted` | Atualiza o timer de procurado. |
+| `hud:Repose` | Atualiza o timer de repouso. |
+| `hud:Menu` | Abre o menu de configurações do HUD. |
+| `domination:Update` / `domination:Close` / `domination:KillFeed` | Placar e killfeed da dominação. |
+
+### Cliente: chat e post-it
+
+| Evento | Descrição |
+| --- | --- |
+| `chat:ClientMessage` | Recebe uma mensagem no chat. |
+| `chat:me_new` / `chat:me_remove` | Cria/remove o texto flutuante do `/me`. |
+| `chat:postit_new` / `chat:postit_add` / `chat:postit_remove` | Cria / adiciona / remove post-its. |
+
+### NUI Callbacks
+
+| Callback | Descrição |
+| --- | --- |
+| `hud:ready`, `get:colors`, `get:logo:data`, `fetch:binds` | Inicialização da NUI (tema, logo, teclas). |
+| `get:menu:savedSettings`, `post:menu:setVelocimeter`, `post:menu:setSurvival`, `post:menu:toggle:*`, `post:closeUi` | Menu de configurações do HUD. |
+| `getChatCategories`, `setChatFocus`, `sendChatMessage` | Chat. |
+| `fetchMapPosition` | Posição no mapa. |
+| `post:police:closeHistory`, `post:police:markLocation`, `get:police:expireHistoryTimeout` | Histórico/marcação de despachos policiais. |
+| `request:accept` / `request:refuse` | Resposta à caixa de pedido. |
+
+---
+
+## Banco de Dados
+
+**Não acessa banco.** Preferências locais via **KVP** (`hud:settings`, `hud:radar`). Timers de procurado/repouso em memória (restaurados no `Connect`/`Disconnect`).
+
+---
+
+## Customização
+
+- **Ruas:** `modifyStreets` (\+ `modifyStreetNames`).
+- **Anúncios/cores:** `hudConfig.anuncios` (\+ `ColorToType` em `notify.lua`).
+- **Armas:** `config/weapons.lua`. **CDN:** `itemsUrl`/`armoryUrl`. **Logo:** `logoUrl`.
+- **Minimapa:** `pinTheMinimap`, `setMiniMapBelt`.
+- **Fome/sede:** `hungerValue`/`thirstValue` (intervalo via eventos `Hunger`/`Thirst`).
+- **Tempo/clima:** velocidade do relógio e valores iniciais em `server-side/core.lua`.

@@ -1,0 +1,83 @@
+---
+title: "cinematiccam"
+description: "Câmera cinematográfica / free cam para screenshots e gravação de vídeos, com filtros visuais, profundidade de campo (DoF) e barras cinematográficas. Acesso restrito a administradores."
+---
+
+O **cinematiccam** cria uma câmera livre (`free cam`) destacada do personagem, ajustada por um menu do `ox_lib`. É voltada para screenshots e gravação de vídeos, com filtros visuais, profundidade de campo e barras cinematográficas. O acesso é restrito a administradores.
+
+## Funcionalidades
+
+O menu do `ox_lib` reúne todas as opções da câmera.
+
+<CardGroup cols={2}>
+  <Card title="Toggle Camera" icon="camera">
+    Liga/desliga a câmera livre.
+  </Card>
+
+  <Card title="Camera Filters" icon="wand-magic-sparkles">
+    Aplica modificadores de timecycle (lista em `config.lua` → `Filters`).
+  </Card>
+
+  <Card title="Depth of Field" icon="circle-half-stroke">
+    Liga/desliga o DoF, com ajustes de `Near`, `Far` e `Strength`.
+  </Card>
+
+  <Card title="Black Bars" icon="film">
+    Barras cinematográficas para enquadramento.
+  </Card>
+
+  <Card title="Toggle Minimap" icon="map">
+    Mostra/oculta o minimapa.
+  </Card>
+
+  <Card title="Controles de câmera" icon="gamepad">
+    Movimento livre, rotação, roll e zoom por teclado e mouse.
+  </Card>
+</CardGroup>
+
+<Info>
+  **Controles** (em `cl_freecam.lua`): `W/A/S/D` movem; `Espaço`/`Z` sobe/desce; mouse rotaciona; `Q/E` roll; roda do mouse = zoom (FOV), com `Shift` ajustando a velocidade. A câmera é destruída se o jogador se afastar mais que `MaxDistance` ou morrer.
+</Info>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="ox_lib" icon="bars">
+    Menu e notificações.
+  </Card>
+
+  <Card title="vrp" icon="server">
+    Validação de grupo no servidor.
+  </Card>
+</CardGroup>
+
+---
+
+## Comandos
+
+| Comando | Descrição | Acesso |
+| --- | --- | --- |
+| `/cam` | Abre o menu da câmera. | Apenas grupo `Admin` |
+
+<Note>
+  Nome configurável em `config.lua` (`CommandName`, padrão `cam`). Registrado via `RegisterCommand`; **sem keybind padrão** (vincule `/cam` a uma tecla pelo FiveM). Valida `vRP.HasGroup(Passport,"Admin")`.
+</Note>
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| `cinematiccam:Open` | Cliente | Disparado pelo servidor após validar o grupo `Admin`; abre o menu da câmera. |
+| `gameEventTriggered` | Cliente | Evento nativo do jogo; usado para detectar a morte do jogador e destruir a câmera. |
+
+---
+
+## Customização
+
+<Tip>
+  Em `config.lua`: `CommandName`, `MaxDistance` (10.0), `MinSpeed`/`MaxSpeed` (0.1/10.0), `MinFov`/`MaxFov` (1.0/130.0), `DisabledControls`, `NearDof`/`FarDof`/`StrengthDof`, `Filters`.
+</Tip>

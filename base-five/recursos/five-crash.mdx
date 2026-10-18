@@ -1,0 +1,183 @@
+---
+title: "five-crash"
+description: "Evento PvP de loot (helicóptero, caminhão e carro forte): um veículo cai/tomba num local, gera baús de loot numa área de combate, com timer, respawn por item e auto-spawn agendado."
+---
+
+O **five-crash** cria eventos de "crash" no mapa: um veículo cai e gera baús de loot ao redor, disputados em uma área de PvP. Pode ser iniciado por comando admin ou automaticamente por horário (`Crash.Schedule`). O servidor monta o loot (de `Crash.LootTables`), marca os baús como "quentes" no recurso `chest` e propaga via `GlobalState`. Mortes dentro da área alimentam um killfeed. O evento termina quando os baús esvaziam (`GlobalState.Helibox <= 0`) ou o tempo expira.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Evento PvP de loot" icon="crosshairs">
+    Veículo cai num local e gera baús disputados numa área de combate.
+  </Card>
+
+  <Card title="Tipos variados" icon="helicopter">
+    Helicóptero, caminhão e carro forte, cada um com props e anúncios próprios.
+  </Card>
+
+  <Card title="Auto-spawn agendado" icon="clock">
+    Spawn automático por horário (`Crash.Schedule`) respeitando o mínimo de jogadores online.
+  </Card>
+
+  <Card title="Crash especial" icon="gem">
+    Variante com multiplicador de loot e bônus garantido em horário definido.
+  </Card>
+
+  <Card title="Killfeed" icon="skull">
+    Mortes dentro da área alimentam um killfeed em tempo real.
+  </Card>
+
+  <Card title="Respawn por item" icon="heart-pulse">
+    Reanimação ao usar item, com ponto de respawn configurável.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    Framework base.
+  </Card>
+
+  <Card title="ox_target" icon="bullseye">
+    Zonas dos baús.
+  </Card>
+
+  <Card title="chest" icon="box">
+    Abre/loota os containers e controla `GlobalState.Helibox`.
+  </Card>
+</CardGroup>
+
+<Info>
+  **core\_logs** é opcional.
+</Info>
+
+---
+
+## Configuração
+
+`config/config.lua` (tabela `Crash`):
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — Configurações principais" icon="sliders">
+    ```lua
+    Crash.ThemeColor = "#0143bb"
+    Crash.Permission = "Admin"          -- comandos (aceita "Grupo@Nivel")
+    Crash.Commands = { Start = "crash", Random = "crashstart", Stop = "crashstop", Special = "specialcrash", ... }
+    
+    Crash.Times = { Duration = 1200, SpawnCooldown = 420 }  -- evento (s) / cooldown (s)
+    Crash.MinPlayers = 10               -- mínimo online p/ auto-spawn
+    Crash.AreaSize = 280                -- raio da área de combate
+    Crash.SpawnDistance = 400           -- distância p/ criar os props
+    Crash.ChestPrefix = "Helicrash"     -- container Prefix:N (contrato com o chest)
+    
+    Crash.Respawn = { Enable = true, Timer = 5, Item = "adrenaline", Health = 200, Coords = {...} }
+    
+    Crash.SpecialTime = "21:00"         -- dispara o crash especial
+    Crash.Schedule = { ["00:00"] = true, ... ["23:00"] = true }  -- horários de auto-spawn (heli aleatório)
+    
+    Crash.Logs = { Started = "", Finished = "", CombatLog = "" }  -- webhooks
+    Crash.Names = { heli = "Helicóptero", truck = "Caminhão", stock = "Carro Forte", stockade = "..." }
+    Crash.Messages = { heli = "Mayday!...", ... }  -- anúncios por tipo
+    Crash.Props = { heli = { Vehicle = "snt_crash_helicopter", Chest = "prop_mil_crate_01" }, ... }
+    
+    Crash.Special = { Type = "stockade", LootMultiplier = 2, Bonus = { item = "gemstone", amount = 10 }, Vehicle = {...}, Chests = {...} }
+    
+    Crash.Locations = {  -- locais [1]-[11]
+        [1] = { Vehicle = { x=..., y=..., z=..., h=... }, Chests = { {x,y,z,h}, ... } },
+    }
+    
+    Crash.LootTables = {  -- sorteia UMA por baú; no especial multiplica por LootMultiplier
+        { { item = "dirtydollar", amount = 10000 }, { item = "c4", amount = 8 }, ... },
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Comandos administrativos para iniciar e finalizar eventos de crash.
+
+| Comando | Uso | Função |
+| --- | --- | --- |
+| `/crash <tipo> [local]` | heli/truck/stock/stockade; local 1-11 | Inicia um crash. |
+| `/crashstart` | N/A | Crash de heli em local aleatório. |
+| `/specialcrash` | N/A | Crash especial (`Crash.Special`). |
+| `/crashstop`, `/endcrash` | N/A | Finaliza o evento. |
+
+---
+
+## Localizações
+
+Coordenadas definidas em `config/config.lua`. Os 11 locais de `Crash.Locations` são sorteados (ou escolhidos por número no comando); cada local tem 1 ponto de veículo e 3 baús.
+
+### Locais de crash (Crash.Locations, veículo)
+
+| Local | Coordenadas (x, y, z, h) | Tipo |
+| --- | --- | --- |
+| Local 1 | -2769.57, 2495.86, 2.68, 187.09 | Veículo (3 baús ao redor) |
+| Local 2 | 478.63, -3369.98, 6.07, 93.55 | Veículo (3 baús ao redor) |
+| Local 3 | 1449.58, -2384.43, 66.86, 0.0 | Veículo (3 baús ao redor) |
+| Local 4 | -1284.97, -2195.92, 13.93, 243.78 | Veículo (3 baús ao redor) |
+| Local 5 | 1060.32, 2362.25, 44.33, 272.13 | Veículo (3 baús ao redor) |
+| Local 6 | 3792.77, 4511.44, 6.99, 294.81 | Veículo (3 baús ao redor) |
+| Local 7 | -1121.92, 4927.13, 218.68, 76.54 | Veículo (3 baús ao redor) |
+| Local 8 | -2328.97, 3045.96, 32.81, 56.7 | Veículo (3 baús ao redor) |
+| Local 9 | 2403.21, 3106.28, 48.24, 260.79 | Veículo (3 baús ao redor) |
+| Local 10 | -325.89, 2721.74, 68.97, 328.82 | Veículo (3 baús ao redor) |
+| Local 11 | 2548.99, -384.29, 92.99, 93.55 | Veículo (3 baús ao redor) |
+
+<Note>
+  Cada local tem 3 baús (campo `Chests`). Exemplo, baús do Local 1: (-2769.03, 2514.23, 2.71), (-2752.0, 2493.97, 1.7) e (-2788.23, 2494.13, 2.61). Os baús dos demais locais seguem o mesmo formato em `Crash.Locations[n].Chests`.
+</Note>
+
+### Crash especial (Crash.Special)
+
+| Local | Coordenadas (x, y, z, h) | Tipo |
+| --- | --- | --- |
+| Veículo | -677.77, -225.69, 36.93, 65.2 | Veículo (carro forte) |
+| Baú 1 | -671.89, -233.73, 36.85, 348.67 | Baú |
+| Baú 2 | -668.58, -231.38, 37.02, 311.82 | Baú |
+| Baú 3 | -669.33, -228.51, 37.1, 25.52 | Baú |
+| Baú 4 | -667.31, -224.17, 37.27, 351.5 | Baú |
+| Baú 5 | -670.41, -222.46, 37.22, 65.2 | Baú |
+
+### Respawn por morte (Crash.Respawn)
+
+| Local | Coordenadas (x, y, z, h) | Tipo |
+| --- | --- | --- |
+| Ponto de respawn | 2685.97, 3430.96, 58.99, 167.25 | Reanimação ao usar item |
+
+---
+
+## Exports
+
+Exports para consultar o estado do evento ativo.
+
+```lua
+exports["five-crash"]:IsActive()       -- há crash ativo?
+exports["five-crash"]:GetTimer()       -- tempo restante "MM:SS"
+exports["five-crash"]:InCrash(Coords)  -- coords dentro da área?
+```
+
+---
+
+## Banco de Dados
+
+Nenhum (delega aos baús via `vRP.SetSrvData`/`GetSrvData`; logs via `five_logs`).
+
+---
+
+## Customização
+
+- **Locais/baús:** `Crash.Locations` (limpeza interna percorre até 6 baús).
+- **Loot:** `Crash.LootTables`, e `LootMultiplier`/`Bonus` no especial.
+- **Tipos/props:** `Crash.Props`, `Crash.Names`, `Crash.Messages`.
+- **Agenda/ritmo:** `Crash.Schedule`, `SpecialTime`, `Times`, `MinPlayers`.
+- **Área:** `AreaSize`, `SpawnDistance`. **Respawn:** `Crash.Respawn`.
+- **Logs:** `Crash.Logs`.

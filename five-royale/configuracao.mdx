@@ -1,0 +1,292 @@
+---
+title: "Configuração"
+description: "Referência completa do arquivo config.lua do Five Royale."
+---
+
+Toda a configuração do Five Royale fica em `config.lua`. As seções abaixo cobrem cada bloco do arquivo, na mesma ordem em que aparecem.
+
+---
+
+## Cor da interface
+
+Toda a tonalidade do tablet e do HUD deriva de uma única cor.
+
+```lua
+config.colors = {
+    primary   = "#e6231a",
+    secondary = "#e6231a",
+    thirdy    = "#e6231a",
+    danger    = "#e6231a", -- vida baixa, zona parada
+    warning   = "#facc15", -- zona fechando
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `primary` / `secondary` / `thirdy` | Tons usados no tablet e nos elementos de destaque da interface. |
+| `danger` | Cor da zona segura enquanto ela está parada, e de avisos de perigo. |
+| `warning` | Cor da zona segura enquanto ela está fechando. |
+
+<Tip>
+  O formato aceito é hexadecimal (`"#e6231a"`). Trocar essas cores re-tematiza o tablet e o HUD sem precisar reconstruir a interface.
+</Tip>
+
+---
+
+## Partida
+
+Limites gerais e organizações aceitas para escalação de time.
+
+```lua
+config.game = {
+    startTime     = 10,
+    maxUsers      = 2,
+    minUsers      = 1,
+    targetPlayers = 100, -- só informativo, mostrado como meta no lobby
+
+    orgs = {
+        "Arma1",
+        "Arma2",
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `startTime` | Tempo padrão, em minutos, usado como base para o anúncio de novas partidas. |
+| `maxUsers` / `minUsers` | Tamanho de time padrão, usado quando o administrador não define um valor no modo Personalizado. |
+| `targetPlayers` | Tamanho de sala mostrado como meta no painel do lobby ("faltam N jogadores") — não bloqueia o início da partida. |
+| `orgs` | Organizações vRP que podem escalar um time inteiro para um evento em Time. |
+
+---
+
+## Bots
+
+Preenchem vaga vazia quando não há jogadores reais suficientes para fechar a meta da partida.
+
+```lua
+config.bots = {
+    enabled      = true,
+    targetTotal  = 20,  -- meta de "jogadores" (reais + bots) que a partida tenta ter
+    maxBots      = 20,  -- teto de bots, nunca ultrapassa isso
+    health       = 200, -- mesmo baseline dos jogadores reais (100 vida + 100 colete)
+    accuracy     = 35,  -- 0-100, precisão de mira nativa do jogo
+    combatRange  = 60.0,
+
+    weapons = {
+        "WEAPON_PISTOL_MK2",
+        "WEAPON_SMG_MK2",
+        "WEAPON_SPECIALCARBINE_MK2",
+        "WEAPON_PUMPSHOTGUN_MK2",
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `enabled` | Liga ou desliga o preenchimento de vagas por bots. |
+| `targetTotal` | Quantos "jogadores" (reais + bots) a partida tenta ter assim que começa. |
+| `maxBots` | Teto de bots por partida, independente de quão vazia a sala esteja. |
+| `health` | Vida inicial de cada bot. |
+| `accuracy` | Precisão de mira dos bots, de 0 a 100. |
+| `combatRange` | Distância em que um bot passa a engajar um alvo (jogador real ou outro bot). |
+| `weapons` | Armas possíveis no loadout inicial de um bot, sorteada uma por bot. |
+
+<Info>
+  Bots só são calculados quando a partida realmente começa (avião partindo), com base em quantos jogadores reais entraram até esse momento.
+</Info>
+
+---
+
+## Patentes
+
+Sistema de pontos: `pontos = abates × pointsPerKill + vitórias × pointsPerVictory`. A patente é o maior tier cujo `minPoints` seja menor ou igual à pontuação do jogador.
+
+```lua
+config.ranks = {
+    pointsPerKill     = 1,
+    pointsPerVictory  = 5,
+
+    tiers = {
+        { name = "Esmeralda", minPoints = 0,   rewards = {} },
+        { name = "Diamante",  minPoints = 50,  rewards = { { item = "dollar", amount = 500 } } },
+        { name = "Mestre",    minPoints = 100, rewards = { { item = "dollar", amount = 1000 } } },
+        {
+            name = "Grão-Mestre", minPoints = 175,
+            rewards = {
+                { item = "dollar",     amount = 2000 },
+                { item = "kitattachs", amount = 1 },
+            },
+        },
+        {
+            name = "Desafiante", minPoints = 275,
+            rewards = {
+                { item = "dollar", amount = 5000 },
+                { item = "vest",   amount = 2 },
+            },
+        },
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `pointsPerKill` / `pointsPerVictory` | Pontos ganhos por abate e por vitória. |
+| `tiers` | Lista de patentes, em ordem crescente de `minPoints`. |
+| `tiers[].rewards` | Itens liberados para resgate manual ao alcançar o tier. Pode ficar vazio. |
+
+<Warning>
+  A recompensa **não é concedida automaticamente** ao subir de patente — o jogador resgata manualmente na aba Recompensas do tablet, uma vez por tier.
+</Warning>
+
+---
+
+## Marcador do painel de evento
+
+Ponto 3D opcional para abrir o painel de criar partida andando até ele, como alternativa a `/painelRoyale`.
+
+```lua
+config.eventPanelMarker = {
+    enabled = true,
+    coords  = vec3(129.78, -1034.91, 29.44),
+    heading = 340.16,
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `enabled` | Liga ou desliga o marcador. |
+| `coords` | Posição do marcador no mundo. |
+| `heading` | Direção do ped/prop do marcador. |
+
+---
+
+## Kit inicial e horários fixos
+
+```lua
+config.initialKit = {} -- vazio de propósito: tudo vem do loot
+
+config.soloTimers = {
+    -- ["18:00"] = true,
+    -- ["00:00"] = true,
+}
+```
+
+`initialKit` fica vazio por padrão — nenhum jogador recebe item ou arma de graça, tudo vem do loot espalhado pelo mapa. `soloTimers` aceita horários fixos (formato `"HH:MM"`) para abrir uma partida Solo automaticamente todo dia nesse horário.
+
+---
+
+## Zona segura
+
+Sequência de raios e dano usada pelo mapa padrão (cada mapa pode sobrescrever com a própria sequência, veja [Mapas](#mapas)).
+
+```lua
+config.safeZone = {
+    cdsStart = vec3(214.6871, -710.8744, 35.2803),
+    reduce = {
+        { timer = 80, radius = 3700.0, damage = 1,  breakSafe = 60 },
+        { timer = 70, radius = 2700.0, damage = 2,  breakSafe = 60 },
+        -- ...demais fases
+        { timer = 30, radius = 0.1,    damage = 40, breakSafe = 20 },
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `cdsStart` | Centro da primeira zona. |
+| `reduce` | Lista de fases, cada uma com `timer` (segundos parada), `radius` (raio ao final da fase), `damage` (dano por tick fora da zona) e `breakSafe` (segundos de transição até a próxima fase). |
+
+---
+
+## Loot
+
+Define os tipos de caixa que nascem no mapa e o conteúdo sorteado de cada uma.
+
+```lua
+config.loot = {
+    perMatch        = 350, -- pontos de loot sorteados por partida
+    minDistance     = 40.0,
+    collectDistance = 1.5,
+    collectTime     = 2000, -- ms segurando E pra abrir a caixa
+    loadDistance    = 120.0,
+    despawnDistance = 160.0,
+
+    boxes = {
+        {
+            id     = "acessorios",
+            model  = "stylegroup_battleroyale_acessorios",
+            weight = 40, -- chance relativa desse tipo de caixa aparecer
+            items = {
+                { item = "vest",       amount = { 1, 1 }, weight = 30 },
+                { item = "bandage",    amount = { 1, 3 }, weight = 35 },
+                { item = "medkit",     amount = { 1, 1 }, weight = 15 },
+                { item = "balaenergy", amount = { 1, 2 }, weight = 20 },
+            },
+        },
+        {
+            id     = "armas",
+            model  = "stylegroup_battleroyale_armas",
+            weight = 25,
+            items = {
+                { item = "WEAPON_PISTOL_MK2",         amount = { 1, 1 }, weight = 35 },
+                { item = "WEAPON_SPECIALCARBINE_MK2", amount = { 1, 1 }, weight = 25 },
+                { item = "WEAPON_SMG_MK2",             amount = { 1, 1 }, weight = 25 },
+                { item = "WEAPON_PUMPSHOTGUN_MK2",     amount = { 1, 1 }, weight = 15 },
+            },
+        },
+        -- caixas de "municao" e "bomba" seguem o mesmo formato
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `perMatch` | Quantos pontos de loot são sorteados a cada partida. |
+| `minDistance` | Distância mínima entre dois pontos de loot sorteados. |
+| `collectDistance` | Distância máxima para poder coletar (pressionar E). |
+| `collectTime` | Tempo, em milissegundos, segurando E para abrir a caixa. |
+| `loadDistance` / `despawnDistance` | Distâncias em que o prop da caixa nasce e some, para poupar entidades no mundo. |
+| `boxes` | Cada tipo de caixa: `id`, `model` (prop), `weight` (chance relativa de aparecer) e `items` (lista com `item`, `amount` como intervalo `{ min, max }` e `weight`). |
+
+---
+
+## Mapas
+
+Cada mapa define sua própria zona inicial, rota de avião e pool de pontos de loot.
+
+```lua
+config.maps = {
+    {
+        id             = "los_santos",
+        name           = "Los Santos",
+        zoneCenter     = config.safeZone.cdsStart,
+        safeZoneReduce = config.safeZone.reduce,
+        planeCoords    = config.planeCoords,
+        lootCoords     = config.vehicles.coords,
+        vehicleCoords  = config.vehicles.coords,
+    },
+    {
+        id             = "cayo_perico",
+        name           = "Cayo Perico",
+        zoneCenter     = vec3(5055.86, -5160.94, 5.0),
+        safeZoneReduce = { --[[ sequência própria, mesmo formato de config.safeZone.reduce ]] },
+        planeCoords    = { --[[ rota própria ]] },
+        lootCoords     = { --[[ pool de pontos de loot da ilha ]] },
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `id` | Identificador usado internamente e na criação da partida. |
+| `name` | Nome exibido no seletor de mapa do painel de criação. |
+| `zoneCenter` | Centro da primeira zona segura nesse mapa. |
+| `safeZoneReduce` | Sequência de fases da zona, mesmo formato de `config.safeZone.reduce`. |
+| `planeCoords` | Rota do avião nesse mapa (pontos de início e fim do sobrevoo). |
+| `lootCoords` | Pool de coordenadas onde o loot pode nascer. |
+| `vehicleCoords` | Pool de coordenadas onde veículos podem nascer (quando aplicável). |
+
+<Tip>
+  Para adicionar um mapa novo, inclua uma entrada em `config.maps` com esses campos. Não é preciso duplicar coordenadas que já existem em outro lugar do arquivo — `los_santos` reaproveita `config.safeZone` e `config.vehicles` diretamente.
+</Tip>

@@ -1,0 +1,165 @@
+---
+title: "Instalação"
+description: "Passo a passo para instalar e adaptar o Five Royale no seu servidor FiveM."
+---
+
+## Dependências
+
+Inicie todas as dependências **antes** do Five Royale.
+
+<CardGroup cols={2}>
+  <Card title="vRP" icon="puzzle-piece">
+    O recurso carrega `@vrp/lib/utils.lua` e usa o framework para identidade, permissões e persistência temporária. Toda a integração fica isolada em um único arquivo.
+  </Card>
+
+  <Card title="five-royale-stream" icon="cube">
+    Pacote de assets (props do loot, textura da parede da zona segura) que acompanha o recurso. Precisa iniciar antes do Five Royale.
+  </Card>
+</CardGroup>
+
+---
+
+## Instalação do recurso
+
+<Steps>
+  <Step title="Copie as duas pastas">
+    O pacote vem com `five-royale` e `five-royale-stream`. Coloque as duas dentro do diretório de recursos do seu servidor.
+  </Step>
+
+  <Step title="Configure o recurso">
+    Edite `config.lua` conforme a página de [Configuração](/five-royale/configuracao). É onde ficam cor da interface, modos disponíveis, patentes, mapas e loot.
+  </Step>
+
+  <Step title="Adicione à server.cfg">
+    Garanta que a ordem de inicialização respeite as dependências.
+
+    ```text
+    ensure vrp
+    ensure five-royale-stream
+    ensure five-royale
+    ```
+  </Step>
+
+  <Step title="Teste com o painel">
+    Use `/painelRoyale` (precisa de permissão de administrador) para criar uma partida de teste, ou `/evento` para abrir o tablet e conferir as salas abertas.
+  </Step>
+</Steps>
+
+---
+
+## Banco de dados
+
+O Five Royale cria as tabelas abaixo automaticamente na inicialização. Não é preciso importar nenhum `.sql`.
+
+<AccordionGroup>
+  <Accordion title="royale_stats" icon="chart-simple">
+    Abates e vitórias acumulados de cada jogador, usados no ranking e na patente.
+
+    ```sql
+    CREATE TABLE IF NOT EXISTS royale_stats
+    ( Passport INT NOT NULL, Victories INT NOT NULL DEFAULT 0, Kills INT NOT NULL DEFAULT 0, PRIMARY KEY (Passport) )
+    ```
+  </Accordion>
+
+  <Accordion title="royale_claimed_tiers" icon="gift">
+    Registra quais tiers de recompensa cada jogador já resgatou, um registro por tier.
+
+    ```sql
+    CREATE TABLE IF NOT EXISTS royale_claimed_tiers
+    ( Passport INT NOT NULL, TierIndex INT NOT NULL, PRIMARY KEY (Passport, TierIndex) )
+    ```
+  </Accordion>
+
+  <Accordion title="royale_avatars" icon="image">
+    URL da foto de perfil escolhida pelo jogador na aba Patente do tablet.
+
+    ```sql
+    CREATE TABLE IF NOT EXISTS royale_avatars
+    ( Passport INT NOT NULL, Avatar VARCHAR(255) NOT NULL, PRIMARY KEY (Passport) )
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Integração com o framework
+
+As funções que conversam com o seu framework ficam em `server-side/framework.lua`. A versão padrão já vem pronta para vRP. Nenhum outro arquivo chama o framework diretamente — para adaptar a outra base, reescreva apenas as funções abaixo mantendo a mesma assinatura.
+
+<AccordionGroup>
+  <Accordion title="Identidade e permissões" icon="user">
+    Usadas para exibir nomes no lobby, no kill feed e no ranking, e para liberar os comandos de administrador.
+
+    ```lua
+    -- Identificador único do jogador a partir do source
+    function framework.requestPassport(source) end
+
+    -- Inverso: source atual a partir do identificador
+    function framework.requestSource(passport) end
+
+    -- Identidade completa (nome, sobrenome...)
+    function framework.requestIdentity(passport) end
+
+    -- Nome completo, usado em kill feed, ranking e roster
+    function framework.requestFullName(passport) end
+
+    -- Libera /painelRoyale, /monitorarRoyale e /forcarRoyale
+    function framework.isAdmin(passport) end
+
+    -- O jogador pertence ao grupo/organização informado?
+    function framework.hasGroup(passport, groupName) end
+
+    -- Quem está online e pertence ao grupo, pra escalar o time da organização
+    function framework.onlineMembersOfGroup(groupName) end
+    ```
+  </Accordion>
+
+  <Accordion title="Estado do jogador" icon="floppy-disk">
+    Guardam e restauram o jogador ao entrar e sair da partida, e cuidam do que precisa ser resetado nesse meio-tempo.
+
+    ```lua
+    -- Cura/reseta o ped ao entrar ou sair da partida
+    function framework.revive(source, hp) end
+
+    -- Guarda posição/dimensão original antes da partida
+    function framework.saveTemporary(passport, source, data) end
+
+    -- Restaura o estado guardado ao sair
+    function framework.applyTemporary(passport, source) end
+
+    -- Tira o jogador de serviços/empregos incompatíveis com a partida
+    function framework.leaveService(source, passport, serviceName) end
+    ```
+  </Accordion>
+
+  <Accordion title="Outras funções" icon="ellipsis">
+    ```lua
+    -- Dá um item ao jogador (recompensas de patente, prêmio de evento)
+    function framework.generateItem(passport, item, amount) end
+
+    -- Prompt de aceitar/recusar (convite de time)
+    function framework.request(source, title, message) end
+
+    -- Desconecta o jogador com um motivo
+    function framework.kick(source, reason) end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Quando alguma dessas funções falha, o recurso avisa no console com o prefixo `[framework.lua]` em vez de derrubar a partida. Use esse aviso para achar o ponto que ficou fora do padrão na adaptação.
+</Note>
+
+---
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Configuração" icon="sliders" href="/five-royale/configuracao">
+    Cor da interface, bots, patentes, mapas e loot.
+  </Card>
+
+  <Card title="Modos e mecânicas" icon="gamepad" href="/five-royale/modos">
+    Times, zona segura, bots e o fluxo completo da partida.
+  </Card>
+</CardGroup>

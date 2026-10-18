@@ -1,0 +1,167 @@
+---
+title: "ticket"
+description: "Sistema de tickets/atendimento (helpdesk) com NUI: jogadores abrem chamados por categoria e a equipe responde, assume e gerencia tudo em uma central administrativa que também reúne ferramentas de moderação."
+---
+
+O **ticket** é um sistema de atendimento (helpdesk) com NUI. Jogadores abrem chamados por categoria e a equipe responde, assume e gerencia tudo em uma central administrativa que também reúne ferramentas de moderação. Duas interfaces NUI a partir do mesmo arquivo, com comunicação via Tunnel (`ticket`).
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Central do Jogador" icon="ticket">
+    `OpenTickets`: abre/visualiza os próprios chamados e troca mensagens.
+  </Card>
+  <Card title="Central Administrativa" icon="shield-halved">
+    `OpenAdmin`: exclusiva do grupo `Config.Administrator`; lista todos os tickets e habilita ações de staff.
+  </Card>
+  <Card title="Categorias e cooldowns" icon="layer-group">
+    Chamados organizados por categoria, com limites por jogador e intervalos configuráveis.
+  </Card>
+  <Card title="Ferramentas de moderação" icon="user-shield">
+    Spectate, revive, freeze, goto/bring, gerência de grupos, banco, gemas e ações de servidor.
+  </Card>
+</CardGroup>
+
+<Info>
+  O acesso é pelo menu **dynamic** (não há comando de chat): quando `ticket` está `started`, o `dynamic` dispara `ticket:Dynamic` e adiciona o menu "Atendimento". Permissões: jogador comum recebe `Tickets = true`; admin recebe todas as flags de `Characters` e `Server`.
+</Info>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vRP" icon="server">
+    Framework base
+  </Card>
+  <Card title="oxmysql" icon="database">
+    Persistência dos tickets
+  </Card>
+  <Card title="dynamic" icon="bars">
+    Entrada do menu
+  </Card>
+  <Card title="discord" icon="discord">
+    `Webhook("Print")`
+  </Card>
+</CardGroup>
+
+<Note>
+  Eventos externos consumidos: `paramedic:Reset`, `hud:RemoveGemstone`, `Notify`, `hud:Active`.
+</Note>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="shared-side/shared.lua — tabela Config" icon="sliders">
+    | Chave | Padrão | Descrição |
+    |---|---|---|
+    | `Administrator` | `"Admin"` | Grupo com acesso à central administrativa. |
+    | `MaxTicketCategory` | `1` | Máx. de tickets abertos por jogador/categoria (0 = ilimitado). |
+    | `Cooldown` | `10` | Intervalo (s) entre mensagens. |
+    | `Categories` | `Dúvidas/Problemas/Outros` | Categorias válidas. |
+    | `MessagesLoad` | `10` | Mensagens carregadas por scroll. |
+    | `CreateInterval` | `600` | Intervalo (s) para abrir novo ticket. |
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+Interface `ticket` (servidor), consumida pela NUI/cliente para todas as operações de ticket e moderação.
+
+### Cliente
+
+| Evento | Descrição |
+|---|---|
+| `ticket:Dynamic` | Adiciona o item "Atendimento" ao menu dynamic. |
+| `ticket:Opened` | Abre a central (jogador ou administrativa, conforme `Admin`). |
+| `ticket:Notify` | Exibe notificação relacionada a tickets. |
+| `ticket:Update` | Atualiza os dados/tabela exibidos na NUI. |
+| `ticket:Freeze` | Congela/descongela o jogador (ação de staff). |
+| `ticket:Waypoint` | Cria um waypoint guiado até as coordenadas. |
+| `ticket:StopWaypoint` | Interrompe o waypoint ativo. |
+| `ticket:initSpectate` | Inicia o modo espectador sobre o alvo. |
+| `ticket:resetSpectate` | Encerra o modo espectador. |
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+|---|---|
+| `Disconnect` | Trata a saída do jogador (limpeza de estado). |
+
+### NUI Callbacks
+
+Encaminham para funções Tunnel `Core.*` no servidor.
+
+**Jogador / tickets**
+
+| Callback | Descrição |
+|---|---|
+| `Tickets` | Lista os tickets do jogador. |
+| `Ticket` | Abre um ticket específico. |
+| `LoadMessages` | Carrega mais mensagens (scroll). |
+| `SendMessage` | Envia mensagem (valida cooldown e 2000 chars). |
+| `CreateTicket` | Cria ticket (valida `CreateInterval`/`MaxTicketCategory`/categoria). |
+| `Config` | Retorna configuração/categorias para a NUI. |
+| `Close` | Fecha a interface. |
+
+**Staff / gestão do ticket**
+
+| Callback | Descrição |
+|---|---|
+| `AssumeTicket` | Staff assume o atendimento. |
+| `CloseTicket` | Fecha o ticket. |
+| `ReopenTicket` | Reabre um ticket fechado. |
+| `ChangeSubject` | Altera o assunto. |
+| `ChangeCategory` | Altera a categoria. |
+| `AddParticipant` | Adiciona participante ao ticket. |
+| `RemoveParticipant` | Remove participante do ticket. |
+| `SendPrivateMessage` | Envia mensagem privada a um jogador. |
+
+**Ferramentas de moderação**
+
+| Callback | Descrição |
+|---|---|
+| `Characters` | Lista personagens/jogadores online. |
+| `Character` | Detalhes de um personagem. |
+| `Spectate` | Espectar o alvo. |
+| `Revive` | Reanima o alvo. |
+| `Kill` | Mata o alvo. |
+| `Freeze` | Congela/descongela o alvo. |
+| `Goto` | Teleporta o staff até o alvo. |
+| `Bring` | Traz o alvo até o staff. |
+| `Waypoint` | Cria waypoint guiado até o alvo. |
+| `SetPed` | Define o ped/modelo do alvo. |
+| `ClearInventory` | Limpa o inventário do alvo. |
+| `AddGroup` | Adiciona grupo/permissão ao alvo. |
+| `RemoveGroup` | Remove grupo/permissão do alvo. |
+| `Bank` | Ajusta o saldo bancário do alvo. |
+| `Gemstone` | Ajusta as gemas do alvo. |
+| `Screenshot` | Captura a tela do alvo. |
+| `Server` | Ações gerais de servidor. |
+| `SetTime` | Define o horário do jogo. |
+| `SetWeather` | Define o clima (whitelist `WeatherWhitelist`). |
+
+<Warning>Ações de staff exigem `vRP.HasPermission(Passport, Config.Administrator)`.</Warning>
+
+---
+
+## Banco de Dados
+
+| Tabela | Colunas |
+|---|---|
+| `tickets_creative` | `id`, `Subject`, `Category`, `Assumed` (passaporte do staff), `Status` (1=aberto, 0=fechado), `CreatedAt`/`ClosedAt`, `Author`, `Members` (JSON), `MessageAdmin`. |
+| `tickets_creative_messages` | `id`, `Ticket` (FK ON DELETE CASCADE), `Type` (`User`/`System`), `Author`, `Staff`, `Message`, `CreatedAt`. |
+
+---
+
+## Customização
+
+- Categorias, limites e cooldowns em `shared-side/shared.lua`.
+- Grupo de acesso da equipe em `Config.Administrator` (deve existir como permissão vRP).
+- Whitelist de climas do `SetWeather` fixa em `server-side/core.lua` (`WeatherWhitelist`).

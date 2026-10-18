@@ -1,0 +1,93 @@
+---
+title: "prison"
+description: "Sistema de prisão (Bolingbroke): mantém o preso confinado numa zona poligonal, processa o cumprimento de serviços ao longo do tempo, revive automaticamente e dá ferramentas policiais (apreensão, consulta de placa)."
+---
+
+O **prison** é o sistema de prisão da penitenciária de Bolingbroke. Enquanto o estado `Prison` do jogador estiver ativo, o cliente cria uma `PolyZone` da penitenciária (sai da zona → teleporta de volta ao centro), dispara o tick de serviço a cada 60s e revive o preso automaticamente quando a vida cai a ≤ 100. A gravação do tempo de prisão fica no vRP (`vRP.UpdatePrison`); este recurso apenas a aciona.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Confinamento na zona" icon="lock">
+    O preso é mantido dentro da `PolyZone` da penitenciária; ao sair, é teleportado de volta ao centro.
+  </Card>
+  <Card title="Cumprimento de serviço" icon="clock">
+    Tick a cada 60s reduz a pena via `vRP.UpdatePrison`.
+  </Card>
+  <Card title="Revive automático" icon="heart-pulse">
+    Quando a vida cai a ≤ 100, o preso é revivido automaticamente.
+  </Card>
+  <Card title="Ferramentas policiais" icon="shield">
+    Apreensão de itens (`prison:Itens`) e consulta de dono por placa (`prison:Plate`).
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    Framework base e `vRP.UpdatePrison`.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Área da penitenciária.
+  </Card>
+  <Card title="inventory" icon="box">
+    `CleanWeapons`.
+  </Card>
+  <Card title="survival" icon="heart-pulse">
+    `Revive`. Também depende de **keyboard**.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+<Note>
+  Sem pasta `config/` — os valores ficam no código.
+</Note>
+
+<AccordionGroup>
+  <Accordion title="client-side/core.lua — zona, tick e revive" icon="map">
+    ```lua
+    local Center = vec3(1679.94, 2513.07, 45.56)   -- centro (destino ao sair da zona)
+    local PolyPrison = PolyZone:Create({ vector2(...), ... }, { name = "Prison" })  -- área
+    -- tick de serviço: TriggerServerEvent("prison:Service") a cada 60000 ms
+    -- revive: vida <= 100, novo revive após 60000 ms, com SetTimeout 15000 ms → survival:Revive(200)
+    ```
+  </Accordion>
+  <Accordion title="server-side/core.lua — cooldown do tick" icon="server">
+    Cooldown de 60s por tick; cada tick chama `vRP.UpdatePrison(Passport)`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Eventos
+
+A tabela abaixo lista os eventos do servidor.
+
+| Evento | Lado | Descrição |
+|---|---|---|
+| `prison:Itens` | Servidor | (Polícia, vida > 100) apreende itens do alvo (`CleanWeapons` + `vRP.ArrestItens`). |
+| `prison:Plate` | Servidor | (Polícia) consulta o dono de uma placa (teclado se vazia). |
+| `prison:Service` | Servidor | Tick de cumprimento (disparado pelo cliente, 1/min); reduz a pena via `vRP.UpdatePrison`. |
+
+---
+
+## Banco de Dados
+
+<Note>
+  Não executa SQL direto. `vRP.UpdatePrison` roda a query `characters/ReducePrison` (reduz `Prison` na tabela `characters`). A entrada na prisão (`Prison > 0`) é feita por outros recursos (MDT, etc.).
+</Note>
+
+---
+
+## Customização
+
+- **Localização:** `PolyPrison` e `Center` (`client-side/core.lua`); o `Center` deve estar dentro do polígono.
+- **Ritmo da pena:** intervalo do tick (cliente) e cooldown (servidor); o desconto efetivo depende de `vRP.UpdatePrison`.
+- **Revive:** limite de vida, intervalo, atraso e vida restaurada.
+- **Restrição policial:** string `"Policia"` em `vRP.HasService`.

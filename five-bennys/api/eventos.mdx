@@ -1,0 +1,122 @@
+---
+title: "Eventos"
+description: "Eventos e comandos do Five Bennys para abrir os painéis, sincronizar tunagens e sons de motor entre clients."
+---
+
+O Five Bennys registra comandos de console para abrir os painéis e alguns eventos de rede para sincronizar tunagem, som de motor e reparo entre os clients. Abaixo estão os pontos úteis para integração com outros recursos.
+
+---
+
+## Comandos
+
+| Comando (padrão) | Config | Quem usa | Ação |
+| --- | --- | --- | --- |
+| `/bennys` | `Bennys.Commands.OpenBennys` | Admin | Abre a tunagem e aplica **direto** no veículo (sem orçamento/cobrança). Exige permissão `Admin` e estar em um veículo. |
+| `/pedidos` | `Bennys.Commands.OpenBudgetPanel` | Mecânico | Abre o serviço em andamento ou a lista de orçamentos. Exige ser mecânico. |
+| `convertBennys` | — | Console | Migra tunagens antigas de `entitydata` para a tabela nova (execução única). |
+
+<Note>
+  Os comandos dos painéis são checados no client (`IsMechanic`, `CheckPlayerPermission`) e a permissão real é validada no servidor via `Framework.HasPermission`.
+</Note>
+
+---
+
+## five-bennys:setTuningMods
+
+Aplica um conjunto de customização a um veículo pela network. Registrado tanto no **server** (rebroadcast) quanto no **client** (aplica de fato). É o evento por trás do [`ApplyStoredTuning`](/five-bennys/api/exports#applystoredtuning).
+
+<CodeGroup>
+
+```lua Server (rebroadcast p/ todos)
+TriggerServerEvent("five-bennys:setTuningMods", netVehId, customTable)
+-- o server reemite: TriggerClientEvent("five-bennys:setTuningMods", -1, netVehId, customTable)
+```
+
+```lua Client (aplica no veículo)
+-- Já registrado internamente. Ao receber, valida o netId e chama SetCustomization(vehicle, data).
+```
+
+</CodeGroup>
+
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
+| `netVehId` | `number` | Network ID do veículo alvo |
+| `customTable` | `table` | Tabela de customização (mesmo formato salvo no banco) |
+
+<Tip>
+  Prefira o export `ApplyStoredTuning` para reaplicar o que está **salvo**. Use este evento diretamente apenas quando você já tem a tabela de customização em mãos.
+</Tip>
+
+---
+
+## five-bennys:syncEngineSound
+
+Sincroniza o som de motor de um veículo para todos os clients. O server recebe e rebroadcast para `five-bennys:syncEngineSound:apply`, que aplica via `ForceVehicleEngineAudio`.
+
+```lua
+TriggerServerEvent("five-bennys:syncEngineSound", sound, netVehId)
+```
+
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
+| `sound` | `string` | `model` do som (ex: `"k20a"`) ou `"DEFAULT"` para restaurar o padrão |
+| `netVehId` | `number` | Network ID do veículo alvo |
+
+---
+
+## five-bennys:notifyBennys
+
+Evento de notificação do resource. É disparado por `Framework.Notify` e normaliza vários apelidos de estilo antes de exibir na NUI.
+
+```lua
+-- server → client específico
+TriggerClientEvent("five-bennys:notifyBennys", source, style, content, time)
+
+-- client (local)
+TriggerEvent("five-bennys:notifyBennys", style, content, time)
+```
+
+| Parâmetro | Tipo | Descrição |
+| --- | --- | --- |
+| `style` | `string` | `sucesso`/`success`/`verde`, `aviso`/`info`/`amarelo`, `negado`/`error`/`vermelho` |
+| `content` | `string` | Texto da notificação |
+| `time` | `number` | Duração em ms |
+
+<Note>
+  A NUI mapeia os estilos para `success`, `warn` e `error`. Para usar o sistema de notificação do seu servidor, reescreva o corpo deste evento no `client/framework.lua`.
+</Note>
+
+---
+
+## Eventos de reparo (internos)
+
+Disparados pelo fluxo de reparo de motor. Úteis para integrar com o seu inventário/sistema de veículos.
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| `repairVehicle` | Client | Emitido para todos (`-1`) com `(vehicle, plate)` ao concluir um reparo. |
+| `inventory:repairAdmin` | Client | Emitido aos jogadores próximos com `(vehicle, plate)` para sincronizar o reparo no inventário. |
+
+<Info>
+  O reparo é iniciado pela NUI (`post:clientMechanic:repairVehicle`), validado e cobrado no servidor (`Core.CheckRepair`, custo `Bennys.Prices.repairPrice`) e respeita o cooldown `Bennys.RequestRepairTime`.
+</Info>
+
+---
+
+## Abrir os painéis a partir de outro recurso
+
+A forma recomendada é executar o comando registrado pelo Five Bennys.
+
+<CodeGroup>
+
+```lua Server
+-- abre o painel de pedidos para um mecânico específico
+ExecuteCommand(("%s %d"):format(Bennys.Commands.OpenBudgetPanel, source))
+```
+
+```lua Client
+-- abre a tunagem admin (requer permissão e estar em um veículo)
+ExecuteCommand(Bennys.Commands.OpenBennys)
+```
+
+</CodeGroup>

@@ -1,0 +1,187 @@
+---
+title: "Adicionando Itens"
+description: "Como cadastrar e editar itens no catálogo compartilhado da base."
+---
+
+Todos os itens da base são definidos em um único arquivo, a **fonte da verdade** para qualquer recurso:
+
+```text
+resources/vrp/config/Item.lua
+```
+
+Esse arquivo declara uma tabela `List`, onde **cada chave é o "spawn" (nome interno) do item**. Esse spawn é o identificador usado em todo o servidor: comandos de admin, receitas de crafting, lojas, baús, inventário. Quando um recurso precisa dar/remover/checar um item, ele usa essa chave (ex.: `"repairkit01"`, `"water"`, `"copper"`).
+
+Outros recursos também podem **registrar itens em runtime** sem editar o `Item.lua`:
+
+```lua
+AddEventHandler("AddItem", function(Name, Table)
+    List[Name] = Table
+end)
+```
+
+<Note>
+  A chave do item (spawn) **não precisa** ser igual ao campo `Index`. Vários itens reaproveitam o mesmo `Index` (e a mesma imagem) com spawns diferentes, ex.: `spray_ballas`, `spray_vagos` usam `Index = "sprays"`.
+</Note>
+
+---
+
+## Estrutura de um item
+
+Exemplo real do arquivo (`repairkit02`):
+
+```lua
+["repairkit02"] = {
+    Index = "repairkit02",
+    Name = "Kit de Reparos",
+    Description = "Solucione problemas com facilidade...",
+    Rarity = "rare",
+    Type = "Comum",
+    Weight = 3.75,
+    Economy = 875,
+    Recycle = {
+        ["scotchtape"] = 1,
+        ["copper"] = 10,
+        ["aluminum"] = 12
+    }
+},
+```
+
+Campos suportados:
+
+| Campo | Tipo | Significado |
+| --- | --- | --- |
+| `Index` | string | Identificador da **imagem** (`ItemsURL .. Index`). Pode ser compartilhado. |
+| `Name` | string | Nome exibido. |
+| `Description` | string | Descrição. Aceita HTML básico e tags `<common>`, `<epic>`, `<legendary>`. |
+| `Type` | string | `"Comum"`, `"Consumível"`, `"Armamento"`, `"Attachs"`. Padrão `"Comum"`. |
+| `Weight` | number | Peso unitário (Kg). Padrão `0.0`. |
+| `Rarity` | string | `"common"`, `"rare"`, `"epic"`, `"legendary"`. Padrão `"normal"`. |
+| `Economy` | number | Preço base na economia. Padrão `0`. |
+| `Max` | number | Quantidade máxima por slot (stack). |
+| `Durability` | number | Horas até estragar (consumíveis) ou durabilidade total (equipamentos). |
+| `Charges` | number | Número de usos/cargas. |
+| `Market` | bool | Negociável no mercado entre jogadores. |
+| `Delete` | bool | Deletável/consumido no uso. |
+| `Recycle` | table | Itens obtidos ao reciclar (`spawn = quantidade`). |
+| `Execute` | table | Ação ao usar: `{ Type = "Server", Event = "nome:evento" }`. |
+| `Backpack` | number | Peso extra que a mochila concede. |
+| `Fridge` | bool | Pode ser guardado em geladeiras. |
+| `Arrest` / `Police` | bool | Item ilícito / de uso policial. |
+
+<Note>
+  O mínimo prático é `Index`, `Name`, `Type` e `Weight`.
+</Note>
+
+---
+
+## Como adicionar um item
+
+<Steps>
+  <Step title="Abra o arquivo de itens">
+    Abra `resources/vrp/config/Item.lua`.
+  </Step>
+  <Step title="Adicione a entrada na tabela List">
+    Dentro de `List = { ... }`, adicione a entrada (chave = spawn):
+
+    ```lua
+    ["meu_item"] = {
+        Index = "meu_item",
+        Name = "Meu Item",
+        Description = "Um item de exemplo.",
+        Type = "Comum",
+        Weight = 0.50,
+        Economy = 250,
+        Market = true
+    },
+    ```
+  </Step>
+  <Step title="Para um consumível com ação ao usar">
+    ```lua
+    ["meu_consumivel"] = {
+        Index = "meu_consumivel",
+        Name = "Meu Consumível",
+        Type = "Consumível",
+        Weight = 0.25,
+        Durability = 12,
+        Delete = true,
+        Execute = { Type = "Server", Event = "meurecurso:Usar" }
+    },
+    ```
+  </Step>
+  <Step title="Suba a imagem no CDN">
+    Suba a imagem no CDN (nome igual ao `Index`).
+  </Step>
+  <Step title="Reinicie o recurso vrp">
+    **Reinicie o recurso `vrp`** (não há build de NUI para itens).
+  </Step>
+</Steps>
+
+<Info>
+  **Itens gerados automaticamente**
+
+  - **Blueprints:** itens com `Blueprint = <n>` ganham automaticamente um item `blueprint_<spawn>`.
+  - **Clonagem (plantações):** `Clones` \+ `Puritys` geram itens base e mudas por pureza.
+</Info>
+
+---
+
+## Funções auxiliares (helpers)
+
+No fim do `Item.lua`. Todas recebem o spawn:
+
+| Função | Retorno | Padrão |
+| --- | --- | --- |
+| `ItemList()` | A tabela `List` inteira | N/A |
+| `ItemExist(Item)` | A tabela do item ou `nil` | `nil` |
+| `ItemIndex(Item)` | `Index` (imagem) | `false` |
+| `ItemName(Item)` | `Name` | `"Deletado"` |
+| `ItemType(Item)` | `Type` | `"Comum"` |
+| `ItemWeight(Item)` | `Weight` | `0.0` |
+| `ItemMaxAmount(Item)` | `Max` (limite de stack) | `false` |
+| `ItemDescription(Item)` | `Description` | `false` |
+| `ItemDurability(Item)` | `Durability` | `false` |
+| `ItemExecute(Item)` | tabela `Execute` | `false` |
+| `ItemEconomy(Item)` | `Economy` | `0` |
+| `ItemRarity(Item)` | `Rarity` | `"normal"` |
+| `ItemRecycle(Item)` | tabela `Recycle` | `false` |
+| `BlockMarket(Item)` | `Market` | `false` |
+| `BlockDelete(Item)` | `Delete` | `false` |
+| `ItemTypeCheck(Item, Mode)` | Se o item é do tipo informado | `false` |
+| `ItemUnique(Item)` | Item único (não empilha) | `false` |
+| `ItemSerial(Item)` | Item com número de série | `false` |
+| `ItemBackpack(Item)` | `Backpack` (peso extra) | `false` |
+| `ItemLoads(Item)` / `ItemRepair(Item)` | Cargas e reparo | `false` |
+| `ItemWater(Item)` / `ItemLostWater(Item)` | Hidratação ganha e perdida | `false` |
+| `ItemAnim(Item)` | Animação ao usar | `false` |
+| `ItemVehicle(Item)` | Veículo associado ao item | `false` |
+| `ItemArrest(Item)` | Item ilícito | `false` |
+| `ItemFridge(Item)` | Pode ir na geladeira | `false` |
+
+<Warning>
+  **Não existe** função `MaxItens`. O limite por slot é lido por **`ItemMaxAmount(Item)`** (campo `Max`).
+</Warning>
+
+---
+
+## Imagens dos itens
+
+A imagem é resolvida a partir de uma URL base (CDN) em `Global.lua`:
+
+```lua
+ItemsURL = "https://cdn.fivenetwork.dev/Itens/"
+```
+
+Caminho final = `ItemsURL` \+ o campo `Index`. Ex.: `repairkit02` → `https://cdn.fivenetwork.dev/Itens/repairkit02`. Para usar seu CDN, altere `ItemsURL`.
+
+---
+
+## Customização
+
+- **Cores de raridade:** bloco `Theme` em `Global.lua` (`common`, `rare`, `epic`, `legendary`).
+- **Itens iniciais do personagem:** tabela `CharacterItens` em `Global.lua` (chaves = spawns válidos).
+- **Reaproveite imagens** com o mesmo `Index` para variações cosméticas.
+- **Economia:** `Economy` \+ `Market = true` para deixar negociável.
+
+<Tip>
+  Após alterar o `Item.lua`, **reinicie o recurso `vrp`**.
+</Tip>

@@ -1,0 +1,120 @@
+---
+title: "Apresentação"
+description: "Conheça o Five Bennys, a oficina completa de tunagem e mecânica com orçamentos, múltiplas oficinas e persistência para FiveM."
+---
+
+O **Five Bennys** é uma oficina de tunagem e mecânica (estilo _Benny's Motorworks_) para servidores FiveM. Ele cobre desde a customização estética e de performance do veículo até um fluxo completo de **orçamentos** entre cliente e mecânico, com **múltiplas oficinas**, permissões por oficina, reparo de motor, sons de motor por addon e persistência das tunagens no banco de dados por **placa \+ modelo**. Toda a lógica de preço e pagamento é validada no servidor, enquanto a interface é uma NUI que apenas exibe e solicita ações.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Customização completa" icon="car">
+    Estética (exterior, rodas, pintura, luzes, neon, placas) e performance (motor, freio, transmissão, turbo, nitro, suspensão) em um único painel.
+  </Card>
+
+  <Card title="Sistema de orçamentos" icon="file-invoice-dollar">
+    O cliente monta o serviço, o mecânico recebe a solicitação, aceita, instala peça por peça e finaliza — recebendo uma porcentagem do valor.
+  </Card>
+
+  <Card title="Múltiplas oficinas" icon="warehouse">
+    Quantas oficinas quiser, cada uma com tipo de serviço, permissão de acesso, permissão de trabalho e vários pontos com marcador.
+  </Card>
+
+  <Card title="Autosserviço configurável" icon="hand">
+    Permita que o jogador tune pagando na hora quando não há mecânico online, ou exija sempre um mecânico.
+  </Card>
+
+  <Card title="Reparo de motor" icon="screwdriver-wrench">
+    Solicitação de reparo com cobrança, animação e cooldown, sincronizada para todos os clients.
+  </Card>
+
+  <Card title="Sons de motor" icon="volume-high">
+    Catálogo de sons de motor por addon, aplicados e sincronizados entre os jogadores.
+  </Card>
+
+  <Card title="Persistência por placa" icon="database">
+    Cada tunagem é salva por placa e modelo e reaplicada automaticamente quando o veículo é spawnado.
+  </Card>
+
+  <Card title="Permissão de admin" icon="shield">
+    Comando administrativo que aplica a tunagem direto no veículo, sem gerar orçamento nem cobrar.
+  </Card>
+</CardGroup>
+
+---
+
+## Como funciona o fluxo de serviço
+
+O comportamento do painel depende de quem abre e das regras em `config/config.lua`. Existem três modos de operação.
+
+<Steps>
+  <Step title="Autosserviço (sem mecânico)">
+    Quando `Bennys.OnlyMechanic = false` e não há mecânico online (com `Bennys.TuningCarIfNotMechanics = true`), o jogador monta a tunagem e **paga na hora**. As modificações são aplicadas e salvas imediatamente.
+  </Step>
+  <Step title="Orçamento (com mecânico)">
+    Quando há mecânico(s) online, o jogador envia o serviço como um **orçamento**. O mecânico visualiza a lista, aceita (o cliente é cobrado no aceite), vai até o veículo, instala cada peça e finaliza. O mecânico recebe `Bennys.PercentageMechanic`% do valor.
+  </Step>
+  <Step title="Admin (direto)">
+    O comando `/bennys` (permissão `Admin`) abre o painel e aplica a tunagem **direto no veículo**, sem gerar orçamento e sem cobrança.
+  </Step>
+</Steps>
+
+<Info>
+  A oficina abre ao entrar no marcador com o veículo e pressionar **E**. A permissão de acesso (`AccessPermission`) e o tipo de serviço (`Type`) são definidos por oficina.
+</Info>
+
+---
+
+## Tipos de oficina
+
+Cada oficina define o que pode ser tunado nela através do campo `Type`.
+
+| Type | O que libera |
+| --- | --- |
+| `allCustoms` | Tudo — estética (exterior, rodas, pintura, luzes) **e** performance |
+| `customization` | Apenas estética (exterior, rodas, pintura, luzes) |
+| `performance` | Apenas performance (motor, freio, turbo, suspensão, etc.) |
+
+---
+
+## Categorias de tunagem
+
+O catálogo (`config/mods.lua`) cobre os 50 slots nativos do GTA (`0`–`49`) mais categorias especiais de chave string. Cada categoria é marcada como `customization` ou `performance`.
+
+<CardGroup cols={2}>
+  <Card title="Carroceria" icon="car-side">
+    Aerofólio, parachoques, saias, chassi, grade, capô, paralamas, teto.
+  </Card>
+
+  <Card title="Performance" icon="gauge-high">
+    Motor, freio, transmissão, suspensão, resistência, nitro, turbo, hidráulica.
+  </Card>
+
+  <Card title="Rodas e pneus" icon="circle-notch">
+    Tipo de roda, rodas, inclinação, cor da roda, fumaça, pneus à prova de balas e de drift.
+  </Card>
+
+  <Card title="Pintura e cores" icon="palette">
+    Cores primária/secundária, tipo de pintura, perolado, camaleão, vidros.
+  </Card>
+
+  <Card title="Iluminação" icon="lightbulb">
+    Faróis xenon (e cor), neon (4 posições e cor).
+  </Card>
+
+  <Card title="Interior e extras" icon="couch">
+    Painel, assentos, volante, decorações, placas, extras do veículo.
+  </Card>
+
+  <Card title="Áudio" icon="music">
+    Buzinas (58 opções) e som do motor por addon.
+  </Card>
+
+  <Card title="Placas" icon="hashtag">
+    Estilo de placa e decoração de placa.
+  </Card>
+</CardGroup>
+
+<Note>
+  Qualquer categoria pode ser desligada globalmente adicionando `enabled = false` na entrada correspondente em `config/mods.lua` — ela some do menu **e** o servidor recusa aplicá-la. Veja a página de [Configuração](/five-bennys/configuracao).
+</Note>

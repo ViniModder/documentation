@@ -1,0 +1,65 @@
+---
+title: "cemitery"
+description: "Minigame de saque no cemitério: um corpo aparece em um túmulo aleatório e os jogadores podem vasculhá-lo em busca de itens."
+---
+
+O **cemitery** é um minigame de saque no cemitério: um corpo aparece em um túmulo aleatório e os jogadores podem vasculhá-lo em busca de itens. É um recurso exclusivamente **client-side**.
+
+Ao interagir com um ped fixo no cemitério (ponto `Init`), o sistema gera um ped "morto" em um dos 40 túmulos sorteados, com animação `dead/dead_a`. Sobre o corpo cria uma zona `ox_target` "Roubar Pertences" que, a cada uso, dispara `inventory:Products` (tratado pelo recurso **inventory**) para entregar os itens. Após 5 saques (`Checkouts >= 5`) a zona é removida.
+
+<Note>
+  Apesar do nome, não há lógica de morte/respawn/hospital: é um minigame de saque de túmulos.
+</Note>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="gears">
+    Core do framework e API base.
+  </Card>
+
+  <Card title="PolyZone" icon="map-pin">
+    Suporte a zonas.
+  </Card>
+
+  <Card title="ox_target" icon="hand-pointer">
+    Zona "Roubar Pertences" sobre o corpo.
+  </Card>
+
+  <Card title="inventory" icon="box">
+    Recebe `inventory:Products`.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+Hardcoded em `client-side/core.lua`:
+
+- `Init`: `vec4(-1741.52, -219.85, 56.14, 255.12)`: ped que inicia o minigame.
+- `Locates`: 40 `vec4` (posições dos túmulos); o corpo nasce num índice sorteado.
+- `List`: 18 modelos de ped para o corpo.
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| `cemitery:initBody` | Cliente | Sorteia modelo/túmulo, cria o ped "morto" e a zona de saque. |
+| `cemitery:Body` | Cliente | Dispara `inventory:Products("Cemitery")`, incrementa `Checkouts` e remove a zona aos 5 saques. |
+
+<Note>
+  O evento `inventory:Products` (arg `"Cemitery"`) é tratado pelo recurso **inventory**, não por este.
+</Note>
+
+---
+
+## Customização
+
+- **Início:** `Init`. **Túmulos:** `Locates`. **Aparência dos corpos:** `List`.
+- **Limite de saques:** condição `Checkouts >= 5`.
+- **Itens recebidos:** chave `"Cemitery"` no recurso **inventory**.

@@ -1,0 +1,94 @@
+---
+title: "survival"
+description: 'Sistema client-side de nocaute, morte e rastejamento (crawl). Gerencia a tela de "Ferido/Nocauteado", a recuperação por primeiros socorros e o respawn final.'
+---
+
+O **survival** é um recurso **exclusivamente client-side** (`client-side/core.lua` + NUI). Não tem `server-side/` nem `config/` — os parâmetros são tabelas Lua locais. Quando a vida cai a `<= 100`, o jogador entra em **ferido (crawl)**: pode rastejar e ainda ser revivido. Esgotado o tempo de crawl, fica **nocauteado/morto** e pode segurar `[E]` para respawn. Expõe `CheckCrawl`/`UpdateCrawl` (Tunnel `survival`) usados pelo paramédico para reanimar.
+
+<Note>Apesar do nome, este recurso **não** trata fome/sede/estresse, apenas nocaute, morte e crawl.</Note>
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Estado Ferido (Crawl)" icon="person-falling">
+    Com vida `<= 100`, o jogador pode rastejar e ainda ser revivido durante o tempo de crawl.
+  </Card>
+  <Card title="Nocaute e Morte" icon="skull">
+    Esgotado o crawl, o jogador fica nocauteado/morto e segura `[E]` para liberar o respawn.
+  </Card>
+  <Card title="Reanimação" icon="kit-medical">
+    O paramédico usa `CheckCrawl`/`UpdateCrawl` (Tunnel `survival`) para reanimar o jogador ferido.
+  </Card>
+  <Card title="Modo Arena" icon="shield-halved">
+    Em `state.Arena` os tempos caem e o respawn usa `arena:Respawn`.
+  </Card>
+</CardGroup>
+
+<Info>
+  States gerenciados: `Death`, `Crawl`.
+</Info>
+
+---
+
+## Dependências
+
+<CardGroup cols={3}>
+  <Card title="vrp" icon="cubes">Framework base.</Card>
+  <Card title="PolyZone" icon="draw-polygon">Zonas.</Card>
+  <Card title="pma-voice" icon="microphone">`:Mute`.</Card>
+</CardGroup>
+
+<Info>
+  Integrações por evento/export: `paramedic`, `inventory`, `hud`, `radio`, `arena`, vrp (`ReloadCharacter`).
+</Info>
+
+---
+
+## Configuração
+
+Valores reais (tabelas locais em `client-side/core.lua`):
+
+| Parâmetro | Valor | Descrição |
+|---|---|---|
+| `Death.Default` | `300` | Segundos de morte/nocaute antes de liberar o respawn. |
+| `Crawl.Default` | `60` | Segundos de estado ferido/rastejando. |
+| `Crawl.Minute` | `60` | Minutos de cooldown aplicado ao reanimar. |
+| Hold `[E]` respawn | `>= 1000` | Contagem para confirmar o respawn. |
+| Respawn coords | `315.26, -1412.37, 31.62` (h `136.07`) | Local de teleporte ao finalizar. |
+
+<Info>
+  Em **Arena** (`state.Arena`) os tempos caem (crawl/death = `1`/`5`) e o respawn usa `arena:Respawn`.
+</Info>
+
+---
+
+## Exports
+
+| Export | Params | Descrição |
+|---|---|---|
+| `Revive(Health, Arena)` | vida (def. `101`), bool | Revive, define vida e (se Arena) colete 100. |
+| `Login()` | N/A | Próximo "death" revive imediatamente (sem crawl). |
+| `FinishSurvival()` | N/A | Encerra e executa o respawn completo. |
+
+<Info>
+  **Tunnel `survival`:** `CheckCrawl()` (true se revivível), `UpdateCrawl(Health)` (revive + cooldown), `Revive(Health,Arena)`.
+</Info>
+
+---
+
+## Eventos
+
+Recurso exclusivamente client-side. Registra apenas o necessário para o estado de dano/morte.
+
+| Evento | Lado | Descrição |
+|---|---|---|
+| Interface Tunnel `survival` | Cliente | Expõe `CheckCrawl`/`UpdateCrawl`/`Revive` ao servidor/paramédico. |
+| `gameEventTriggered` | Cliente | Detecta dano durante o crawl (encurta o timer e cura). |
+
+<Note>Não registra eventos próprios de rede (`RegisterNetEvent`). Para reanimar, nocautear e respawnar ele apenas **dispara** eventos de outros recursos (`paramedic:bloodDeath`/`Reset`, `inventory:*`, `radio:Disconnect`, `hud:*`, `player:Survival`, `arena:Respawn`).</Note>
+
+---
+
+## Customização
+
+Edite `Death`, `Crawl` e `TimeCrawling` em `client-side/core.lua` (tempos, textos, durações de animação). Coordenadas de respawn fixas em `FinishSurvival()`.

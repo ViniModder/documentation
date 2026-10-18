@@ -1,0 +1,490 @@
+---
+title: "Instalação"
+description: "Passo a passo para instalar e configurar o Five Totem no seu servidor FiveM."
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="oxmysql" icon="database">
+    Única dependência sempre obrigatória. Responsável por toda a comunicação com o banco de dados.
+  </Card>
+
+  <Card title="Sistema de interação" icon="hand-pointer">
+    `sleepless_interact` ou `ox_target`, conforme o valor de `Totem.Interaction.System`. Se usar `"marker"`, nenhuma dependência extra é necessária.
+  </Card>
+</CardGroup>
+
+---
+
+## Banco de Dados
+
+As tabelas são criadas automaticamente na primeira inicialização do recurso. As estruturas abaixo servem apenas como referência.
+
+<Steps>
+  <Step title="Tabela de estado">
+    Armazena a receita e o total de vendas de cada restaurante.
+
+    ```sql
+    CREATE TABLE IF NOT EXISTS `core_totem_state` (
+      `totem_id`    VARCHAR(100) NOT NULL,
+      `revenue`     INT          NOT NULL DEFAULT 0,
+      `total_sales` INT          NOT NULL DEFAULT 0,
+      `updated_at`  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`totem_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ```
+  </Step>
+  <Step title="Tabela de itens">
+    Armazena o estoque e o preço de cada item por restaurante.
+
+    ```sql
+    CREATE TABLE IF NOT EXISTS `core_totem_items` (
+      `totem_id`   VARCHAR(100) NOT NULL,
+      `item_id`    VARCHAR(100) NOT NULL,
+      `stock`      INT          NOT NULL DEFAULT 0,
+      `price`      INT          NOT NULL DEFAULT 0,
+      `updated_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`totem_id`, `item_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Instalação do Recurso
+
+<Steps>
+  <Step title="Copie a pasta do recurso">
+    Coloque a pasta `core-totem` dentro do diretório de recursos do seu servidor (ex: `resources/[core]/`).
+  </Step>
+  <Step title="Adapte o config/functions.lua">
+    Este é o único arquivo que precisa ser editado para integrar ao seu framework. Veja a seção [Adaptação de Framework](#adaptação-de-framework) abaixo.
+  </Step>
+  <Step title="Configure o recurso">
+    Edite `config/config.lua` e `config/webhooks.lua` conforme descrito na seção [Configuração](#configuração).
+  </Step>
+  <Step title="Adicione à server.cfg">
+    Certifique-se de iniciar o recurso após o oxmysql e o seu framework.
+
+    ```text
+    ensure oxmysql
+    ensure seu-framework
+    ensure core-totem
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Adaptação de Framework
+
+Toda a comunicação com o framework está isolada em `config/functions.lua`.
+
+<AccordionGroup>
+  <Accordion title="Identificação do jogador" icon="user">
+    ```lua
+    function Functions.getUserId(source)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.Passport(source)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.getUserId(source)
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromId(source)
+        -- return xPlayer and xPlayer.getIdentifier() or nil
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayer(source)
+        -- return Player and Player.PlayerData.citizenid or nil
+    end
+    
+    function Functions.getUserSource(user_id)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.Source(user_id)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.getUserSource(user_id)
+    
+        -- Exemplo ESX:
+        -- for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
+        --     if xPlayer.getIdentifier() == user_id then return xPlayer.source end
+        -- end
+    
+        -- Exemplo QBCore:
+        -- for _, src in ipairs(QBCore.Functions.GetPlayers()) do
+        --     local Player = QBCore.Functions.GetPlayer(src)
+        --     if Player and Player.PlayerData.citizenid == user_id then return src end
+        -- end
+    end
+    
+    function Functions.getUserName(user_id)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.FullName(user_id)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- local identity = vRP.getUserIdentity(user_id)
+        -- return identity and (identity.firstname .. " " .. identity.name) or "Desconhecido"
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- return xPlayer and xPlayer.getName() or "Desconhecido"
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- if Player then
+        --     local ci = Player.PlayerData.charinfo
+        --     return ci.firstname .. " " .. ci.lastname
+        -- end
+        -- return "Desconhecido"
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Permissões de admin" icon="shield">
+    Controla quem pode acessar o painel administrativo de cada restaurante. Suporta string simples ou tabela de permissões. Aceita a notação `"grupo@nivel"` para grupos com nível.
+
+    ```lua
+    function Functions.hasPermission(user_id, permissions)
+        if not permissions then return true end
+        local list = type(permissions) == "table" and permissions or { permissions }
+    
+        for _, perm in ipairs(list) do
+            -- Exemplo vRP (custom) — aceita "grupo@nivel":
+            if vRP.HasGroup(user_id, perm) then return true end
+    
+            -- Exemplo vRPex / vRP padrão:
+            -- if vRP.hasPermission(user_id, perm) then return true end
+    
+            -- Exemplo ESX (por grupo):
+            -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+            -- if xPlayer and xPlayer.getGroup() == perm then return true end
+    
+            -- Exemplo QBCore:
+            -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+            -- if Player and Player.PlayerData.permission == perm then return true end
+        end
+        return false
+    end
+    ```
+
+    <Tip>
+      O valor de `AdminPermission` em cada restaurante é passado diretamente para esta função. Ajuste-o para corresponder ao sistema de grupos do seu framework.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Bloqueio por funcionários" icon="door-closed">
+    Retorna todos os **sources** de jogadores online que possuem a permissão informada. Usada para verificar se há funcionários em serviço próximos ao totem.
+
+    ```lua
+    function Functions.getUsersByPermission(permission)
+        if not permission then return {} end
+        local result = {}
+    
+        -- Exemplo vRP (Creative Enchanted):
+        local users = vRP.NumPermission(permission) or {}
+        for passport, src in pairs(users) do
+            if src then result[#result + 1] = src end
+        end
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- for _, user_id in ipairs(vRP.getUsersByPermission(permission) or {}) do
+        --     local src = vRP.getUserSource(user_id)
+        --     if src then result[#result + 1] = src end
+        -- end
+    
+        -- Exemplo ESX (por grupo):
+        -- for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
+        --     if xPlayer.getGroup() == permission then
+        --         result[#result + 1] = xPlayer.source
+        --     end
+        -- end
+    
+        -- Exemplo QBCore:
+        -- for _, src in ipairs(QBCore.Functions.GetPlayers()) do
+        --     local Player = QBCore.Functions.GetPlayer(src)
+        --     if Player and Player.PlayerData.permission == permission then
+        --         result[#result + 1] = src
+        --     end
+        -- end
+    
+        return result
+    end
+    ```
+
+    <Note>
+      Esta função é chamada toda vez que um jogador abre o totem. Certifique-se de que a implementação seja eficiente.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Economia" icon="coins">
+    ```lua
+    -- Débita dinheiro do jogador (banco + dinheiro em mão). Retorna true se bem-sucedido.
+    function Functions.tryPayment(user_id, amount)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.PaymentFull(user_id, amount)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.tryFullPayment(user_id, amount)
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- if not xPlayer then return false end
+        -- if xPlayer.getMoney() >= amount then
+        --     xPlayer.removeMoney(amount); return true
+        -- elseif xPlayer.getAccount("bank").money >= amount then
+        --     xPlayer.removeAccountMoney("bank", amount); return true
+        -- end
+        -- return false
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- if not Player then return false end
+        -- if Player.PlayerData.money.cash >= amount then
+        --     return Player.Functions.RemoveMoney("cash", amount)
+        -- elseif Player.PlayerData.money.bank >= amount then
+        --     return Player.Functions.RemoveMoney("bank", amount)
+        -- end
+        -- return false
+    end
+    
+    -- Deposita dinheiro na conta bancária do jogador (usado no saque quando Withdraw.Item = nil)
+    function Functions.giveBankMoney(user_id, amount)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.GiveBank(user_id, amount)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.giveBankMoney(user_id, amount)
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- if xPlayer then xPlayer.addAccountMoney("bank", amount) end
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- if Player then Player.Functions.AddMoney("bank", amount) end
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Inventário" icon="box">
+    ```lua
+    -- Retorna a quantidade e o slot do item no inventário do jogador
+    function Functions.getInventoryItemAmount(user_id, item)
+        -- Exemplo vRP (Creative Enchanted):
+        local data = vRP.InventoryItemAmount(user_id, item)
+        return tonumber(data[1]) or 0, data[2] or item
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.getInventoryItemAmount(user_id, item) or 0, item
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- local data    = xPlayer and xPlayer.getInventoryItem(item)
+        -- return data and data.count or 0, item
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- local found  = Player and Player.Functions.GetItemByName(item)
+        -- return found and found.amount or 0, item
+    end
+    
+    -- Remove item do inventário. Retorna true se bem-sucedido.
+    -- Usado quando RequireItems = true para consumir o item no reabastecimento.
+    function Functions.tryGetInventoryItem(user_id, item, amount)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.TakeItem(user_id, item, amount, true)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.tryGetInventoryItem(user_id, item, amount, true)
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- if xPlayer and xPlayer.getInventoryItem(item).count >= amount then
+        --     xPlayer.removeInventoryItem(item, amount); return true
+        -- end
+        -- return false
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- return Player and Player.Functions.RemoveItem(item, amount) or false
+    end
+    
+    -- Dá item ao jogador (usado no saque de receita quando Withdraw.Item está definido)
+    function Functions.giveInventoryItem(user_id, item, amount)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.GenerateItem(user_id, item, amount, true)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.giveInventoryItem(user_id, item, amount, true)
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- if xPlayer then xPlayer.addInventoryItem(item, amount) end
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- if Player then Player.Functions.AddItem(item, amount) end
+    end
+    
+    -- Retorna o nome de exibição do item para a interface
+    function Functions.getItemName(itemId)
+        -- Exemplo vRP (Creative Enchanted):
+        return ItemName(itemId) or itemId
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- local data = vRP.items[itemId]
+        -- return data and data.name or itemId
+    
+        -- Exemplo ESX:
+        -- local item = ESX.GetItemLabel(itemId)
+        -- return item or itemId
+    
+        -- Exemplo QBCore:
+        -- local item = QBCore.Shared.Items[itemId]
+        -- return item and item.label or itemId
+    end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — Geral, Moeda e Imagens" icon="sliders">
+    ```lua
+    Totem.DefaultThemeColor = "#0143bb"  -- Cor padrão da interface (pode ser sobrescrita por restaurante)
+    
+    Totem.Currency = {
+        Prefix    = "R$ ",  -- Prefixo antes do valor
+        Suffix    = "",     -- Sufixo após o valor
+        Separator = ".",    -- Separador de milhar
+    }
+    
+    -- URL base das imagens dos itens. A imagem final será: BaseUrl .. itemKey .. Extension
+    Totem.Images = {
+        BaseUrl   = "https://cdn.exemplo.com/itens/",
+        Extension = ".png",
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="config/config.lua — Estoque, Preços e Saque" icon="boxes-stacked">
+    ```lua
+    Totem.Stock = {
+        DefaultStock = 0,     -- Estoque inicial ao criar o item no banco
+        MaxStock     = 200,   -- Estoque máximo permitido por item
+        RequireItems = true,  -- true = admin precisa ter o item no inventário para reabastecer
+    }
+    
+    Totem.PriceRange = {
+        Min = 500,
+        Max = 2000,
+    }
+    
+    -- Item entregue ao sacar receita. nil ou false = deposita no banco via giveBankMoney
+    Totem.Withdraw = {
+        Item = "dollars",
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="config/config.lua — Bloqueio e Prop" icon="door-closed">
+    ```lua
+    Totem.Blocking = {
+        Enabled        = true,
+        Radius         = 25.0,  -- Raio em metros ao redor do totem
+        BlockedMessage = "O totem está fechado. Há funcionários em serviço.",
+    }
+    
+    Totem.MachineObject = {
+        Model  = "totem",  -- Nome ou hash do modelo 3D
+        Freeze = true,
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="config/config.lua — Sistema de Interação" icon="hand-pointer">
+    Escolha um dos três sistemas e configure apenas o bloco correspondente.
+
+    ```lua
+    Totem.Interaction = {
+        System            = "sleepless",  -- "sleepless" | "ox_target" | "marker"
+        AutoCloseDistance = 5.0,          -- Fecha o painel se o jogador se afastar mais que isso
+    
+        Sleepless = {
+            Label            = "Abrir Totem",
+            Icon             = "utensils",
+            Distance         = 2.5,
+            InteractDistance = 2.5,
+        },
+    
+        OxTarget = {
+            Label    = "Abrir Totem",
+            Icon     = "fa-solid fa-utensils",
+            Distance = 2.5,
+            Radius   = 1.0,
+        },
+    
+        Marker = {
+            DrawDistance = 12.0,
+            OpenDistance = 1.5,
+            Key          = 38,           -- 38 = E
+            Text         = "~g~E~w~  ABRIR TOTEM",
+            Type         = 2,            -- 2 = cilindro
+            ZOffset      = 0.15,
+            TextZOffset  = 0.35,
+            Scale        = vec3(0.18, 0.18, 0.18),
+            Color        = { 59, 130, 246, 160 },  -- R, G, B, A
+        },
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="config/config.lua — Restaurantes" icon="store">
+    Cada entrada representa um totem independente. A chave (ex: `"SodaPop"`) é o identificador único no banco de dados — nunca reutilize uma chave já usada.
+
+    ```lua
+    Totem.Restaurants = {
+        ["MeuRestaurante"] = {
+            ThemeColor = "#0143bb",  -- Sobrescreve DefaultThemeColor para este totem
+            Banner     = "https://cdn.exemplo.com/banner.png",  -- Imagem do cabeçalho na interface
+    
+            Machine = {
+                Object = true,                            -- true = spawna o prop 3D no mundo
+                Coords = vec4(-1381.35, -1397.01, 4.61, 351.5),
+            },
+    
+            AdminPermission   = "restaurante.admin",   -- String ou table de permissões
+            ServicePermission = "restaurante.servico", -- false ou nil para nunca bloquear
+    
+            Items = {
+                hamburguer   = { DefaultPrice = 1500 },
+                refrigerante = { DefaultPrice = 800 },
+            },
+        },
+    }
+    ```
+
+    <Tip>
+      `AdminPermission` e `ServicePermission` aceitam a notação `"grupo@nivel"` (ex: `"admin@2"`) se o seu framework suportar permissões por nível.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="config/webhooks.lua — Webhooks do Discord" icon="discord">
+    ```lua
+    webhookURLs = {
+        purchase    = "",  -- Compra realizada por um cliente
+        restock     = "",  -- Reabastecimento feito pelo admin
+        withdraw    = "",  -- Saque de receita pelo admin
+        priceChange = "",  -- Alteração de preço pelo admin
+    }
+    ```
+
+    Deixe qualquer URL como `""` para desativar aquele webhook.
+  </Accordion>
+</AccordionGroup>

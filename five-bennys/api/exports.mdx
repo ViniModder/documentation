@@ -1,0 +1,121 @@
+---
+title: "Exports"
+description: "Funções exportadas pelo Five Bennys para reaplicar tunagens e consultar sons de motor a partir de outros scripts."
+---
+
+O Five Bennys expõe funções **server-side** para que o seu sistema de veículos reaplique a customização salva quando um veículo é spawnado. Todos os exports são identificados pela **placa** (e opcionalmente pelo **modelo**), já que a persistência é feita por `(plate, model)`.
+
+<Warning>
+  Sempre verifique `GetResourceState("five-bennys") == "started"` antes de chamar os exports, para o seu recurso continuar funcionando com o Bennys desligado.
+</Warning>
+
+---
+
+## HasTuning
+
+Indica se existe alguma tunagem salva para uma placa (opcionalmente restringindo a um modelo). Use antes de spawnar o veículo para decidir se deixa o Bennys reaplicar a customização.
+
+```lua
+local hasTuning = exports["five-bennys"]:HasTuning(plate, model)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Obrigatório | Descrição |
+| --- | --- | :-: | --- |
+| `plate` | `string` | ✓ | Placa do veículo (espaços são normalizados internamente) |
+| `model` | `string` |  | Nome do modelo. Se omitido, retorna `true` para qualquer modelo salvo naquela placa |
+
+**Retorno:** `boolean` — `true` se há tunagem salva para a placa (ou para a placa\+modelo).
+
+**Exemplo**
+
+```lua
+if exports["five-bennys"]:HasTuning(plate) then
+    -- não aplique os mods antigos; deixe o Bennys reaplicar
+end
+```
+
+---
+
+## ApplyStoredTuning
+
+Reaplica a tunagem salva em um veículo já criado, sincronizando a customização para **todos os clients**. É a função que "veste" o veículo com o que foi salvo na oficina.
+
+```lua
+local ok = exports["five-bennys"]:ApplyStoredTuning(netVehId, plate)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Obrigatório | Descrição |
+| --- | --- | :-: | --- |
+| `netVehId` | `number` | ✓ | Network ID do veículo já spawnado |
+| `plate` | `string` | ✓ | Placa usada para localizar a tunagem salva |
+
+**Retorno:** `boolean` — `true` se encontrou e aplicou uma tunagem; `false` se não havia nada salvo para a placa.
+
+**Comportamento de modelo:** a função tenta casar o modelo do veículo (via `GetEntityModel`) com o modelo salvo. Se a placa tem apenas **uma** tunagem registrada, ela é aplicada mesmo sem casar o modelo. Internamente dispara `five-bennys:setTuningMods` para `-1` (todos).
+
+<Note>
+  **Som do motor:** o `ApplyStoredTuning` restaura a customização **completa** — incluindo o **som de motor** salvo. O `setTuningMods` chama `SetCustomization`, que reaplica `ForceVehicleEngineAudio`. Você **não** precisa disparar `five-bennys:syncEngineSound` no spawn: o export já cuida do som junto com o resto. (É por isso que o `five-vehicles` chama apenas `HasTuning` \+ `ApplyStoredTuning`, sem nenhum evento de som.)
+</Note>
+
+<Warning>
+  O `setTuningMods` é um broadcast único no momento da chamada — aplica em quem já tem o veículo em stream. Chame o `ApplyStoredTuning` **logo após** o veículo existir em rede (como no exemplo), para todos os clients próximos aplicarem a customização (e o som) juntos.
+</Warning>
+
+**Exemplo**
+
+```lua
+local entity, networkVehicle = createNetVehicle(plate, model, coords, ...)
+if networkVehicle and exports["five-bennys"]:HasTuning(plate) then
+    exports["five-bennys"]:ApplyStoredTuning(networkVehicle, plate)
+end
+```
+
+---
+
+## GetStoredEngineSound
+
+Retorna o som de motor salvo para uma placa. Exposto como função de interface do resource (`Core.GetStoredEngineSound`), útil para reaplicar/consultar o áudio do motor em outros fluxos.
+
+```lua
+local sound = Core.GetStoredEngineSound(plate, model)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Obrigatório | Descrição |
+| --- | --- | :-: | --- |
+| `plate` | `string` | ✓ | Placa do veículo |
+| `model` | `string` |  | Nome do modelo. Se omitido e houver só uma tunagem na placa, usa essa |
+
+**Retorno:** `string` com o `model` do som (ex: `"k20a"`) — ou `false` se não houver som salvo.
+
+<Note>
+  Para aplicar um som em um veículo, o resource dispara `five-bennys:syncEngineSound`, que rebroadcast para todos os clients aplicarem via `ForceVehicleEngineAudio`. Veja os [Eventos](/five-bennys/api/eventos).
+</Note>
+
+---
+
+## Exemplo de integração completo
+
+Reaplicação de tunagem no spawn de um veículo de garagem, respeitando o estado do resource.
+
+```lua
+-- server-side, no seu sistema de veículos
+local entity, networkVehicle = createNetVehicle(vehicleData.plate, vehicleData.index, spawnPos, ...)
+
+if networkVehicle then
+    local hasBennys = GetResourceState("five-bennys") == "started"
+        and exports["five-bennys"]:HasTuning(vehicleData.plate)
+
+    -- Se o Bennys tem a customização, ignore os mods legados do seu sistema:
+    setupCharacterVehicle(networkVehicle, hasBennys and {} or mods, health, damages)
+
+    if hasBennys then
+        exports["five-bennys"]:ApplyStoredTuning(networkVehicle, vehicleData.plate)
+    end
+end
+```

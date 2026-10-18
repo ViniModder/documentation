@@ -1,0 +1,123 @@
+---
+title: "Catálogo de Veículos"
+description: "Como funciona o catálogo dinâmico de veículos da base, gerenciado em jogo pelo /gmanager."
+---
+
+Diferente dos itens, **a base não mantém os veículos em um arquivo de configuração estático**. O arquivo `resources/vrp/config/Vehicle.lua` **não contém uma lista de veículos**: é apenas uma camada de funções auxiliares que consultam o recurso `five-vehicles` via exports:
+
+```lua
+local function safeGetInfo(Name)
+    local ok, info = pcall(function() return exports['five-vehicles']:getVehicleInfo(Name) end)
+    return ok and info or nil
+end
+```
+
+No `five-vehicles`, a tabela `vehlist` nasce **vazia** (`config/vehicles.lua`) e é preenchida em runtime a partir da tabela de banco **`five_vehicles_registered`**. O cadastro/edição é feito **dentro do jogo** pelo comando **`/gmanager`**.
+
+<Warning>
+  Não existe um `.lua` onde você "adiciona um carro" manualmente. Você cadastra pelo gerenciador e o registro vai para o banco.
+</Warning>
+
+---
+
+## Onde os veículos ficam armazenados (banco)
+
+A tabela `five_vehicles_registered` é a fonte da verdade. Ela é criada automaticamente na inicialização do recurso:
+
+| Coluna | Significado |
+| --- | --- |
+| `id` | Chave primária auto-incremento. |
+| `spawn` | Model/hash do veículo. **Único.** Ex.: `bati`, `taxi`, `flashgt`. |
+| `name` | Nome de exibição. Ex.: `"Ruiner 4"`. |
+| `category` | Categoria técnica (`car`, `suv`, `truck`, `bike`, `motorcycle`, `service`, `water`, `air`, `vip`). |
+| `payment_type` | Tipo de pagamento/garagem. Padrão `primary`. |
+| `weight_trunk` | Peso do porta-malas (Kg). |
+| `weight_gloves` | Peso do porta-luvas (Kg). |
+| `price` | Preço do veículo. |
+| `gemstone` | Custo em gemas (diamantes); `NULL` se não se aplica. |
+| `class` | Classe exibida (`"Esportivos"`, `"SUVs"`, etc.). |
+| `mode` | Modo especial (`Bikes`, `Work`, `Rental`) ou `NULL`. |
+| `out_dealership` | `1` = fora da concessionária; `0` = vendável na loja. |
+| `created_by` | Passaporte de quem cadastrou. |
+| `created_at` / `updated_at` | Datas de criação e da última alteração. |
+
+<Warning>
+  A remoção pelo `/gmanager` é definitiva (`DELETE`), não é soft-delete. Não existe coluna `deleted`.
+</Warning>
+
+O recurso também cria as tabelas `five_vehicles_garages` (garagens), `five_vehicles_stock` (estoque por model) e `five_characters_vehicles_srvc` (veículos de serviço/aluguel).
+
+---
+
+## Como cadastrar/editar veículos: `/gmanager`
+
+O comando é definido em `five-vehicles/config/commands.lua`:
+
+```lua
+['garageManager'] = { enabled = true, name = 'gmanager', permission = {'Admin'} }
+```
+
+<CardGroup cols={3}>
+  <Card title="Comando" icon="terminal">
+    `/gmanager`
+  </Card>
+
+  <Card title="Permissão" icon="lock">
+    Grupo `Admin`.
+  </Card>
+
+  <Card title="Função" icon="window-restore">
+    Abre o painel (NUI) onde se gerenciam garagens e o cadastro de veículos. As alterações vão para o banco e refletem no `vehlist` em tempo real.
+  </Card>
+</CardGroup>
+
+Comandos relacionados, todos definidos em `five-vehicles/config/commands.lua`:
+
+| Comando | Permissão | Função |
+| --- | --- | --- |
+| `/car` | `Admin` | Spawnar veículo. |
+| `/dv` | `Admin`, `Militar`, `Civil`, `CORE`, `BOPE`, `PRF` | Remover veículo. |
+| `/dvarea` | `Admin` | Remover veículos numa área (raio máximo de 100). |
+| `/fixar` | `Admin` | Reparar veículo. |
+| `/vstock` | `Admin` | Gerenciar estoque (quantidade) de um veículo. |
+| `/vmanager` | `Admin` | Gerenciar veículos de um personagem. |
+| `/gmanager` | `Admin` | Gerenciar garagens e o catálogo de veículos. |
+
+<Tip>
+  Cada comando tem `enabled` e `name` próprios no `commands.lua`: dá para renomear ou desligar qualquer um sem tocar no código.
+</Tip>
+
+---
+
+## Funções auxiliares (Vehicle.lua)
+
+Leem os dados retornados por `five-vehicles`. Aceitam spawn (string) ou hash:
+
+| Função | Retorno | Padrão |
+| --- | --- | --- |
+| `VehicleList()` | A lista completa | `{}` |
+| `VehicleExist(Name)` | A info do veículo | `false` |
+| `VehicleName(Name)` | `info.name` | `"Desconhecido"` |
+| `VehicleWeight(Name)` | peso do porta-malas | `0` |
+| `VehiclePrice(Name)` | `info.price` | `0` |
+| `VehicleGemstone(Name)` | `info.gemstone` | `0` |
+| `VehicleClass(Name)` | `info.class` | `"Desconhecido"` |
+| `VehicleMode(Name)` | `info.mode` | `false` |
+| `VehicleStock(Name)` | `info.stock` | `999999` |
+
+<Note>
+  Todas as chamadas são protegidas por `pcall`: se o veículo não existir, retornam o padrão sem erro.
+</Note>
+
+<Info>
+  As nove funções também são expostas como exports do `vrp`, então outros recursos podem chamar `exports.vrp:VehiclePrice("bati")` sem passar pelo Proxy.
+</Info>
+
+---
+
+## Resumo prático
+
+- **Não edite Lua para adicionar carros**: a lista é dinâmica.
+- O catálogo vive no banco, em **`five_vehicles_registered`**.
+- Para adicionar/editar/remover veículos, use **`/gmanager`** (requer `Admin`); para estoque, `/vstock`.
+- Para uma **categoria nova**, adicione a chave em `five-vehicles/config/vehicles.lua` (`categories`) antes de usá-la.

@@ -1,0 +1,81 @@
+---
+title: "device"
+description: "Minigame de hackeamento (NUI) reutilizável: outros recursos o chamam para gerar uma prova de habilidade em grade contra o tempo, retornando sucesso ou falha."
+---
+
+O **device** é um **utilitário de minigame** (sem item, comando ou banco), puramente client-side \+ NUI. Outros recursos o chamam para gerar uma prova de habilidade em grade contra o tempo, recebendo sucesso ou falha como retorno.
+
+## Funcionalidades
+
+Ao ser acionado, abre uma interface em tela cheia com a mecânica de hackeamento.
+
+<CardGroup cols={2}>
+  <Card title="Grade alvo" icon="table-cells">
+    Uma grade `9 x 10` com uma sequência alvo aleatória.
+  </Card>
+
+  <Card title="Cursor móvel" icon="up-down-left-right">
+    Um cursor de 4 posições que o jogador move com as **setas** para alinhar sobre a sequência correta.
+  </Card>
+
+  <Card title="Embaralhamento" icon="shuffle">
+    A grade embaralha a cada `2000 ms` (rotação das colunas).
+  </Card>
+
+  <Card title="Cronômetro" icon="stopwatch">
+    Um cronômetro decrescente com valor inicial definido por quem chama.
+  </Card>
+</CardGroup>
+
+<Info>
+  `Enter` confirma (acerto = sucesso); `Escape` cancela (falha); tempo esgotado = falha. A chamada é **bloqueante**: `Device(Seconds)` só retorna quando o jogador conclui, devolvendo `true`/`false`.
+</Info>
+
+---
+
+## Dependências
+
+<Card title="vrp" icon="server">
+  `lib/Tunnel`; roteia o tema da UI ao recurso `vrp`.
+</Card>
+
+---
+
+## Exports
+
+| Export | Parâmetro | Retorno | Descrição |
+| --- | --- | --- | --- |
+| `exports["device"]:Device(Seconds)` | `Seconds` (padrão `30`) | `boolean` | Abre o minigame e bloqueia até o resultado. |
+
+<Info>
+  Também exposto via Tunnel como `Core.Device(Seconds)` (interface `device`), permitindo o servidor disparar o minigame num jogador.
+</Info>
+
+---
+
+## Eventos
+
+O cliente expõe a interface Tunnel `device` (`Tunnel.bindInterface`) com `Device(Seconds)`, permitindo o servidor disparar o minigame num jogador. Não há `RegisterNetEvent`/`AddEventHandler` próprios — a comunicação é apenas Lua ↔ NUI (`SendNUIMessage({Action="Open", Payload=Seconds})`).
+
+| Callback | Lado | Descrição |
+| --- | --- | --- |
+| `Success` | NUI | Jogador concluiu o minigame; resolve a chamada com `true`. |
+| `Failure` | NUI | Jogador falhou/cancelou ou o tempo esgotou; resolve com `false`. |
+
+---
+
+## Customização
+
+<CardGroup cols={3}>
+  <Card title="Tempo" icon="stopwatch">
+    Argumento de `Device(Seconds)` (padrão `30`).
+  </Card>
+
+  <Card title="Dificuldade" icon="sliders">
+    Estado da NUI (grade `9x10`, sequência de `4`, embaralhamento `2000 ms`).
+  </Card>
+
+  <Card title="Tema" icon="palette">
+    Buscado do recurso `vrp`; fallback roxo embutido.
+  </Card>
+</CardGroup>

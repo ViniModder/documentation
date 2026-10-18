@@ -1,0 +1,111 @@
+---
+title: "five-codiguin"
+description: 'Resgate de códigos promocionais ("codiguins") via painel NUI, entregando recompensas (dinheiro, gemas, veículo de aluguel e itens) uma única vez por personagem.'
+---
+
+O **five-codiguin** é o sistema de resgate de códigos promocionais do servidor. O jogador abre um painel (`/codiguin`), digita um código e, se válido e ainda não usado, recebe as recompensas. O código é **normalizado** (maiúsculas, sem espaços), e o resgate é **único por personagem** (gravado em `playerdata`).
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Painel de resgate" icon="ticket">
+    O jogador abre um painel NUI por `/codiguin` e digita o código promocional.
+  </Card>
+
+  <Card title="Resgate único" icon="lock">
+    Código normalizado (maiúsculas, sem espaços) e resgate único por personagem, gravado em `playerdata`.
+  </Card>
+
+  <Card title="Recompensas combinadas" icon="gift">
+    Dinheiro (`dollar`), gemas, veículo de aluguel (via `five-vehicles`) e itens na mesma entrada.
+  </Card>
+
+  <Card title="Códigos configuráveis" icon="key">
+    Cada código é uma entrada em `Codiguin.Codes`, com label, descrição e recompensas próprias.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="layer-group">
+    Framework base (Tunnel/Proxy; `Passport`, `UserData`, `GenerateItem`, `UpgradeGemstone`).
+  </Card>
+
+  <Card title="five-vehicles (opcional)" icon="car">
+    Apenas para a recompensa de veículo (`generateRentalVehicle`).
+  </Card>
+</CardGroup>
+
+<Info>
+  `five_logs` _(opcional)_: registra o log `CODIGUIN`.
+</Info>
+
+---
+
+## Configuração
+
+Todo o ajuste fica em `config/config.lua` (tabela `Codiguin`).
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — Configuração e códigos" icon="sliders">
+    ```lua
+    Codiguin.Command = "codiguin"
+    Codiguin.StorageKey = "five_codiguin_used"   -- chave em playerdata
+    Codiguin.ThemeColor = "#e77a2a"              -- Theme.main tem prioridade
+    
+    Codiguin.Codes = {
+        ["INAUGUROU"] = {                          -- a CHAVE é o código digitado
+            label = "INAUGUROU",
+            description = "🚘 Veículo 7 dias<br>💸 R$ 20.000<br>💎 60 Gemas",
+            rewards = {
+                money   = 20000,                   -- item dollar (se > 0)
+                gems    = 60,                      -- gemas (se > 0)
+                vehicle = { model = "ikx3gt3rs23", days = 7 },  -- aluguel (se model e days > 0)
+                -- items = { { item = "id_item", amount = 1 } },  -- itens (opcional)
+            },
+        },
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+| Comando | Descrição |
+| --- | --- |
+| `/codiguin` | Abre o painel de resgate (qualquer jogador). |
+
+---
+
+## Localizações
+
+O recurso não possui locais fixos no mundo (sem NPCs, blips, marcadores ou zonas). O painel é aberto apenas pelo comando `/codiguin`.
+
+---
+
+## Exports
+
+Não publica exports próprios. O Tunnel `five-codiguin` expõe `Core.Redeem(code)`.
+
+---
+
+## Banco de Dados
+
+Não cria tabela própria, usa `playerdata` do vRP. Guarda um mapa `{ ["CODIGO"] = timestamp }` por personagem sob a chave `Codiguin.StorageKey`.
+
+---
+
+## Customização
+
+- **Novos códigos:** adicione entradas em `Codiguin.Codes` (chave = código em MAIÚSCULAS sem espaços).
+- **Recompensas combinadas:** misture `money`, `gems`, `vehicle` e `items` na mesma entrada.
+- **Comando/tema:** `Codiguin.Command`, `Codiguin.ThemeColor`.
+
+<Note>
+  A UI é distribuída compilada em `web/dist/` (sem `src` no recurso).
+</Note>

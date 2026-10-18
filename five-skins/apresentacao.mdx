@@ -1,0 +1,105 @@
+---
+title: "Apresentação"
+description: "Conheça o Five Skins, o sistema completo de skins de armas com caixas, loja, trocas, aprimoramento e skins temporárias para FiveM."
+---
+
+O **Five Skins** é um sistema completo de cosméticos de armas para servidores FiveM. O jogador abre caixas, recebe skins por sorteio ponderado, organiza o inventário por arma, compra e vende com a moeda interna, troca skins com outros jogadores, aprimora itens em busca de skins mais valiosas, acompanha o ranking e ainda testa qualquer skin em uma área isolada antes de decidir. Toda a lógica é validada no servidor, enquanto o cliente apenas exibe e pede ações. A interface é uma aplicação React (NUI) totalmente configurável pelo Lua.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Caixas e sorteio" icon="box-open">
+    Abertura de caixas pagas com a moeda interna ou de uma caixa diária grátis, com a skin definida por sorteio ponderado.
+  </Card>
+
+  <Card title="Inventário por categoria" icon="layer-group">
+    Organização das skins por arma, com equipar, desequipar, vender e comprar direto no painel.
+  </Card>
+
+  <Card title="Loja integrada" icon="cart-shopping">
+    Compra de skins pelo inventário, com opção de preço por período de validade.
+  </Card>
+
+  <Card title="Trocas entre jogadores" icon="arrow-right-arrow-left">
+    Propostas de troca com outro jogador, com taxa cobrada em vouchers e validade configurável.
+  </Card>
+
+  <Card title="Aprimoramento" icon="wand-magic-sparkles">
+    Consome skins e saldo para tentar uma skin de maior valor, com chance proporcional ao investimento.
+  </Card>
+
+  <Card title="Ranking" icon="ranking-star">
+    Ranking de skins ganhas por período, alimentado pelo histórico de aberturas.
+  </Card>
+
+  <Card title="Teste de armas" icon="crosshairs">
+    Testa a skin em uma área isolada por routing bucket, sem afetar os outros jogadores.
+  </Card>
+
+  <Card title="Skins temporárias" icon="hourglass-half">
+    Skins com prazo de validade, compradas por período ou ganhas em caixas, removidas de forma automática ao expirar.
+  </Card>
+</CardGroup>
+
+---
+
+## Como funciona
+
+<Steps>
+  <Step title="O jogador abre o painel">
+    Pelo comando `/skins`, por evento ou por outro recurso que dispare a abertura.
+  </Step>
+  <Step title="Abre caixas e recebe skins">
+    Cada caixa entrega uma skin por sorteio ponderado. A caixa diária é gratuita e entra em cooldown, as demais custam a moeda interna.
+  </Step>
+  <Step title="Gerencia o inventário">
+    O jogador equipa, vende ou compra skins por categoria. A skin equipada é aplicada na arma pela integração com o inventário.
+  </Step>
+  <Step title="Troca, aprimora e testa">
+    Troca skins com outros jogadores, aprimora itens em busca de algo melhor e testa qualquer skin em uma área isolada antes de decidir.
+  </Step>
+</Steps>
+
+---
+
+## Caixas
+
+Cada caixa pode ser gratuita ou paga, e pode ter acesso restrito a um grupo.
+
+| Situação | Como configurar | Comportamento |
+| --- | --- | --- |
+| Caixa paga | `price` maior que zero | Cobra o valor da moeda interna na abertura. |
+| Caixa diária grátis | `free = true` e `cooldownSeconds` | Abre sem custo e entra em cooldown até a próxima liberação. |
+| Caixa restrita | `permission = "Grupo"` | Só abre para quem tem o grupo informado. |
+
+A skin entregue é definida pelo campo `chance` de cada skin do catálogo. Toda abertura entra no histórico que alimenta o ranking e a lista de vitórias recentes.
+
+---
+
+## Skins temporárias
+
+Uma skin temporária funciona igual a uma permanente enquanto está válida. A diferença é que ela tem uma data de expiração. O jogador pode obter uma skin temporária de duas formas.
+
+<CardGroup cols={2}>
+  <Card title="Na compra pela loja" icon="cart-shopping">
+    Ao comprar uma skin, o jogador escolhe um dos períodos definidos na configuração. A opção permanente também aparece na mesma lista.
+  </Card>
+
+  <Card title="Ao abrir uma caixa" icon="box-open">
+    Se a skin sorteada tiver uma duração definida na caixa, ela entra no inventário já com o prazo.
+  </Card>
+</CardGroup>
+
+Quando o prazo termina, a skin é removida do inventário de forma automática e o jogador recebe um aviso. No painel, as skins temporárias mostram quantos dias restam, e as que estão perto de expirar ganham destaque.
+
+<Note>
+  Se o jogador já tem a skin de forma permanente, abrir uma caixa ou comprar uma versão temporária não tira a permanência. A skin continua sem prazo.
+</Note>
+
+---
+
+## Economia
+
+O sistema trabalha com uma moeda interna própria (SkinsCoins) e com vouchers usados nas trocas. A moeda interna paga as caixas e as compras da loja, enquanto os vouchers cobrem a taxa das trocas entre jogadores.
+
+Se preferir usar a moeda do seu servidor no lugar da SkinsCoins, basta ligar essa opção na configuração. Nesse caso, as compras passam a consumir o saldo do framework em vez da moeda interna.

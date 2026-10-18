@@ -1,0 +1,79 @@
+---
+title: "Eventos"
+description: "Eventos do Five Skins para abrir o painel do jogador e o painel administrativo a partir de outros scripts."
+---
+
+Você pode abrir o painel do jogador de várias formas: pelo comando, por evento no cliente ou a partir do servidor.
+
+---
+
+## Abrir o painel
+
+<CodeGroup>
+
+```lua Client (evento)
+TriggerEvent("five-skins:Open")
+```
+
+```lua Server (para um jogador)
+TriggerClientEvent("five-skins:Open", source)
+```
+
+</CodeGroup>
+
+O comando padrão `/skins` (configurável em `globalConfig.command`) faz exatamente isso.
+
+---
+
+## Abrir o painel administrativo
+
+A área administrativa exige a permissão definida em `globalConfig.staffPermission`. O comando padrão é `/skinsadm`, configurável em `globalConfig.adminCommand`.
+
+<CodeGroup>
+
+```lua Client (evento)
+TriggerEvent("five-skins:OpenAdmin")
+```
+
+```lua Server (para um jogador)
+TriggerClientEvent("five-skins:OpenAdmin", source)
+```
+
+</CodeGroup>
+
+<Note>
+  Use a abertura administrativa apenas para quem é staff. O painel também valida a permissão no servidor antes de liberar qualquer ação.
+</Note>
+
+---
+
+## Fechar o painel
+
+O jogador fecha a interface a qualquer momento apertando **ESC**. Não é necessário disparar nada manualmente.
+
+---
+
+## Exemplo de integração
+
+Abre o painel quando o jogador interage com um NPC ou marker definido em outro script.
+
+```lua
+-- client-side, em outro script
+RegisterNetEvent("meuMarker:interagir", function()
+    TriggerEvent("five-skins:Open")
+end)
+```
+
+Ou, a partir do servidor, abrindo para um jogador específico após um evento:
+
+```lua
+-- server-side, em outro script
+RegisterNetEvent("meuEvento:abrirSkins", function()
+    local src = source
+    TriggerClientEvent("five-skins:Open", src)
+end)
+```
+
+<Tip>
+  Para conceder skins, moeda ou vouchers a partir de outros recursos, use os [exports](/five-skins/api/exports), que são a forma recomendada de integração.
+</Tip>

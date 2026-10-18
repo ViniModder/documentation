@@ -1,0 +1,123 @@
+---
+title: "five-sitting"
+description: 'Permite sentar em praticamente qualquer lugar (cadeiras, props, paredes, escadas, beiradas e chão), detectando o ponto de assento por raycast. Baseado no "KC Sit Anywhere".'
+---
+
+O **five-sitting** permite sentar em praticamente qualquer lugar (cadeiras, props, paredes, escadas, beiradas e chão), detectando o ponto de assento por raycast. Ao acionar o comando/tecla, o script dispara raycasts a partir do jogador e decide automaticamente o cenário de animação: escadas, cadeira, parede (encostar), beirada, chão, etc. Recurso standalone (não depende do vRP nem de banco). Toda a lógica de sentar é client-side. Baseado no "KC Sit Anywhere".
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Sentar em qualquer lugar" icon="chair">
+    Cadeiras, props, paredes, escadas, beiradas e chão, com cenário de animação escolhido automaticamente.
+  </Card>
+
+  <Card title="Detecção por raycast" icon="crosshairs">
+    O ponto de assento é detectado dinamicamente por raycast a partir da posição do jogador.
+  </Card>
+
+  <Card title="Standalone" icon="box">
+    Não depende do vRP nem de banco. Toda a lógica de sentar é client-side.
+  </Card>
+
+  <Card title="Multi-idioma" icon="language">
+    Locales `en` e `fr` selecionáveis em `Config.Language`.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={1}>
+  <Card title="/assetpacks" icon="box">
+    Declarada no manifesto. Recurso standalone.
+  </Card>
+</CardGroup>
+
+<Info>
+  **Opcional:** `fivem-checker` (update checker).
+</Info>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config.lua — opções principais" icon="sliders">
+    ```lua
+    Config.Precision = 0.04          -- precisão da detecção (baixo demais causa lag)
+    Config.MaxHeight = 0.20          -- altura máxima de assento
+    Config.Distance = 0.5            -- distância à frente p/ procurar assento
+    Config.GroundDistance = 0.8      -- distância p/ assento no chão
+    Config.MaxRetryBeforeSeated = 10 -- tentativas de detecção
+    
+    Config.DetectWorld = true        -- detecta geometria do mapa
+    Config.DetectProps = true        -- detecta props
+    Config.DetectVehicles = false    -- detecta veículos (instável, off)
+    
+    Config.CommandUseKey = true
+    Config.CommandInputParameter = 'J'   -- tecla padrão
+    Config.CommandName = 'sit'           -- comando (/sit)
+    
+    Config.GetUpFromSitKey = 73          -- tecla p/ levantar (X)
+    Config.UseMoveKeyToGetUp = false     -- levantar ao andar (WASD)
+    Config.GetUpChecks = { ["Health"] = false, ["Ragdoll"] = false }
+    
+    Config.EnabledList = {               -- tipos de assento habilitados
+        ['Stairs'] = true, ['Chair'] = true, ['Sit'] = true, ['Wall'] = true,
+        ['Ledge'] = true, ['Ground'] = false, ['Seat'] = true, ['Seat (chair)'] = true,
+    }
+    
+    Config.Language = 'en'           -- en | fr (locales/)
+    ```
+  </Accordion>
+
+  <Accordion title="config.lua — funções customizáveis" icon="code">
+    Funções customizáveis em `config.lua`:
+
+    - `CanSit(player)` — condição p/ sentar.
+    - `HeightAdjustment(player)` — ajuste de altura por roupa.
+    - `SittingNotification(message, type)` — integração com seu sistema de notificação.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+O recurso expõe um único comando para sentar no ponto detectado.
+
+| Comando | Permissão | Descrição |
+| --- | --- | --- |
+| `/sit` | Nenhuma | Senta no ponto detectado (nome em `Config.CommandName`). |
+
+---
+
+## Exports
+
+Export disponível para consultar o estado do jogador.
+
+```lua
+exports['five-sitting']:IsSitting()  -- bool: jogador está sentado?
+```
+
+---
+
+## Localizações
+
+O recurso não usa coordenadas fixas no mundo. O ponto de assento é detectado dinamicamente por raycast a partir da posição do jogador, então não há NPCs, blips, zonas ou pontos pré-definidos.
+
+---
+
+## Customização
+
+- **Notificações/condição/altura:** funções `SittingNotification`, `CanSit`, `HeightAdjustment`.
+- **Tipos de assento:** `Config.EnabledList`.
+- **Tecla/comando:** `Config.CommandInputParameter`, `Config.CommandName`.
+- **Levantar:** `Config.GetUpFromSitKey`, `UseMoveKeyToGetUp`, `GetUpChecks`.
+- **Idioma:** `Config.Language` (`locales/`).
+
+<Note>
+  `config.lua` e `locales/*.lua` são editáveis (escrow\_ignore).
+</Note>

@@ -1,0 +1,137 @@
+---
+title: "trunkchest"
+description: "Armazenamento no porta-malas de veículos: guarda/retira itens com capacidade baseada no modelo, vínculo ao dono do veículo, restrições de itens por modelo e expansão via item `diagram`."
+---
+
+O **trunkchest** cria um inventário secundário ("Porta-Malas") por veículo. O baú é identificado por `Trunkchest:<dono>:<modelo>` (compartilhado entre veículos do mesmo dono e modelo) e a capacidade é igual a `VehicleWeight(Model)`.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Porta-malas por veículo" icon="box-archive">
+    Inventário secundário identificado por `Trunkchest:<dono>:<modelo>`.
+  </Card>
+
+  <Card title="Vínculo ao dono" icon="user-lock">
+    Se quem abre não for o dono, pede autorização (`vRP.Request`).
+  </Card>
+
+  <Card title="Restrição por modelo" icon="filter">
+    A tabela `Store` define quais itens podem entrar em cada modelo de veículo.
+  </Card>
+
+  <Card title="Expansão via diagram" icon="up-right-and-down-left-from-center">
+    Capacidade = `VehicleWeight(Model)`; o item `diagram` expande até 5x.
+  </Card>
+</CardGroup>
+
+---
+
+## Fluxo
+
+<Steps>
+  <Step title="Interação no veículo">
+    A interação "Abrir Porta-Malas" (do `five-modules`) dispara `trunkchest:openTrunk`.
+  </Step>
+  <Step title="Validação do veículo">
+    O servidor valida o veículo (`five-vehicles:Spawn`) e identifica o dono.
+  </Step>
+  <Step title="Autorização do dono">
+    Se quem abre não for o dono, pede autorização via `vRP.Request`.
+  </Step>
+  <Step title="Abertura do baú">
+    O baú `Trunkchest:<dono>:<modelo>` é montado na NUI com capacidade `VehicleWeight(Model)`.
+  </Step>
+</Steps>
+
+---
+
+## Dependências
+
+<CardGroup cols={3}>
+  <Card title="vrp" icon="server">
+    Framework base
+  </Card>
+
+  <Card title="PolyZone" icon="draw-polygon">
+    Zonas de interação
+  </Card>
+
+  <Card title="oxmysql" icon="database">
+    Persistência
+  </Card>
+
+  <Card title="five-vehicles" icon="car">
+    `Spawn`
+  </Card>
+
+  <Card title="five-modules" icon="puzzle-piece">
+    Interação
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+Sem pasta `config/`. As regras ficam em `server-side/core.lua`.
+
+<AccordionGroup>
+  <Accordion title="server-side/core.lua — restrições de itens" icon="lock">
+    ```lua
+    local Store = {                       -- restringe itens por modelo (só estes podem entrar)
+        flatbed = { plastic = true, glass = true, tyres = true, ... },
+        trash = { binbag = true },
+    }
+    local Blocked = {                     -- itens proibidos em qualquer porta-malas
+        dollar = true, dirtydollar = true, promissory1000 = true, ...
+    }
+    -- Capacidade = VehicleWeight(Model); item "diagram" expande até VehicleWeight*5 (+10/unidade)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Nenhum (interação pelo veículo).
+
+---
+
+## Exports
+
+Não declara exports. Interface Tunnel `trunkchest`: `Mount`, `Store`, `Take`, `Update`, `Close`.
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| Interface Tunnel `trunkchest` | Servidor | Expõe `Mount`, `Store`, `Take`, `Update`, `Close` à NUI/cliente. |
+| `trunkchest:openTrunk` | Servidor | Valida o veículo, identifica o dono e abre o porta-malas. |
+| `Disconnect` | Servidor | Limpa o estado do baú ao jogador desconectar. |
+| `trunkchest:Open` | Cliente | Abre a NUI do porta-malas. |
+| `inventory:Close` | Cliente | Fecha a interface do baú. |
+| `Take` | NUI | Retira item do porta-malas. |
+| `Store` | NUI | Guarda item no porta-malas. |
+| `Update` | NUI | Atualiza/move itens (quantidade, slot). |
+| `Mount` | NUI | Monta/carrega o conteúdo do porta-malas na interface. |
+
+---
+
+## Banco de Dados
+
+<Note>
+  Não cria tabelas. Conteúdo persistido em `entitydata` (chave `Trunkchest:<dono>:<modelo>`) via funções de baú do vRP.
+</Note>
+
+---
+
+## Customização
+
+- **Restrição de itens por veículo:** tabela `Store` (`modelo = { item = true }`).
+- **Itens proibidos:** tabela `Blocked`.
+- **Capacidade:** `VehicleWeight` do veículo (vRP); `diagram` expande até 5x.
+- **Slots na NUI:** mínimo 25.

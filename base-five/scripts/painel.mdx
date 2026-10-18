@@ -1,0 +1,143 @@
+---
+title: "painel"
+description: "Software de gestão de grupos/organizações (NUI) para membros com cargo de liderança: administra membros, hierarquia, tags, anúncios, banco do grupo, permissões por cargo e a compra de vantagens (perks)."
+---
+
+O **painel** é um software NUI vinculado ao vRP que centraliza a administração de um grupo. Conforme o nível hierárquico e as permissões por cargo, o jogador gerencia membros, hierarquia, tags, anúncios, banco do grupo, permissões e vantagens.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Membros" icon="users">
+    Liste integrantes (nome, passaporte, cargo, horas, status, tags), respeitando o limite de membros.
+  </Card>
+  <Card title="Hierarquia" icon="sitemap">
+    Convide (`vRP.Request`), promova/rebaixe e demita membros.
+  </Card>
+  <Card title="Tags" icon="tag">
+    Crie, edite, atribua/remova e exclua tags do grupo.
+  </Card>
+  <Card title="Anúncios" icon="bullhorn">
+    Crie, edite e remova avisos internos do grupo.
+  </Card>
+  <Card title="Banco do grupo" icon="building-columns">
+    Saldo + histórico (últimas 50), depositar, sacar e transferir.
+  </Card>
+  <Card title="Permissões" icon="lock">
+    Configure (apenas nível 1) o que cada cargo pode fazer por módulo.
+  </Card>
+  <Card title="Perks / Vantagens" icon="star">
+    Compre melhorias usando o saldo do banco do grupo.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    Framework base.
+  </Card>
+  <Card title="oxmysql" icon="database">
+    Persistência das tabelas do painel.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Zonas de área.
+  </Card>
+  <Card title="dynamic" icon="desktop">
+    Abertura via menu do computador.
+  </Card>
+</CardGroup>
+
+<Info>
+  **five_logs** é opcional — usado para registrar ações do painel.
+</Info>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="shared-side/shared.lua — tabela Config" icon="sliders">
+    - `BankTaxWithdraw` / `BankTaxTransfer`: multiplicador no saque/transferência (1.0 = sem taxa).
+    - `Paramedics`: permissões tratadas como paramédicas (`HospitalNorte`, `HospitalSul`).
+    - `Disabled`: abas desabilitadas por grupo (ex.: `Mansao01 = { "Tags","Bank","Goals","Perks" }`).
+    - `Perks`: vantagens compráveis: `Type` (`Members`/`Premium`/`Tags`/`Announces`), `Title`, `Description`, `Image`, `Increase`, `Price` (número ou lista por nível) e `Level` mínimo opcional.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Nenhum. A abertura vem do menu do computador (`dynamic`), que dispara `painel:Open` com o grupo do jogador.
+
+---
+
+## Exports
+
+Não declara exports. A comunicação usa Tunnel (`painel`):
+
+`Department`, `Player`, `Members`, `Invite`, `Hierarchy`, `Dismiss`, `Tags`/`GetTag`/`CreateTag`/`UpdateTag`/`AssignTag`/`RemoveTag`/`DestroyTag`, `Announcements`/`CreateAnnouncement`/`UpdateAnnouncement`/`DestroyAnnouncement`, `Bank`/`DepositBank`/`WithdrawBank`/`TransferBank`, `Perks`/`PerksBuy`, `Permissions`/`SavePermissions`.
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+Cliente e servidor expõem a interface `painel` (`Tunnel.bindInterface("painel", Core)`). Cada NUI callback repassa para a função `Core.*` homônima no servidor.
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+|---|---|
+| `painel:Open` | Abre o painel para o grupo informado; valida `vRP.HasPermission` e dispara `painel:Opened`. |
+| `Disconnect` | Limpeza ao jogador desconectar. |
+
+### Cliente
+
+| Evento | Descrição |
+|---|---|
+| `painel:Opened` | Abre a NUI e libera o foco/cursor. |
+| `painel:Notify` | Notificação interna (Título, Mensagem, Tipo). |
+
+### NUI Callbacks
+
+Cada callback chama a função `Core.*` correspondente no servidor via Tunnel.
+
+| Grupo | Callbacks |
+|---|---|
+| Sistema | `Close` |
+| Membros / hierarquia | `Members`, `Invite`, `Hierarchy`, `Dismiss` |
+| Tags | `Tags`, `GetTag`, `CreateTag`, `UpdateTag`, `AssignTag`, `RemoveTag`, `DestroyTag` |
+| Anúncios | `Announcements`, `CreateAnnouncement`, `UpdateAnnouncement`, `DestroyAnnouncement` |
+| Vantagens | `Perks`, `PerksBuy` |
+| Banco do grupo | `Bank`, `DepositBank`, `WithdrawBank`, `TransferBank` |
+| Permissões | `Permissions`, `SavePermissions` |
+
+---
+
+## Banco de Dados
+
+O painel utiliza as tabelas abaixo.
+
+| Tabela | Colunas |
+|---|---|
+| `painel_creative_announcements` | `id`, `Title`, `Description`, `Timestamp`, `Updated`, `Permission` |
+| `painel_creative_tags` | `id`, `Image`, `Name`, `Members` (JSON), `Permission` |
+| `painel_creative_transactions` | `id`, `Type` (`Deposit`/`Withdraw`/`Transfer`), `Passport`, `Value`, `Timestamp`, `Transfer`, `Permission` |
+
+<Note>
+  Permissões por cargo: `vRP.SetSrvData` na chave `Painel:Permissions:<Grupo>`. Saldo, limites (`Members`/`Tags`/`Announces`), `Premium` e `Experience` ficam na tabela `permissions` do vRP.
+</Note>
+
+---
+
+## Customização
+
+- **Taxas:** `Config.BankTaxWithdraw` / `BankTaxTransfer`.
+- **Abas por grupo:** `Config.Disabled`.
+- **Vantagens:** `Config.Perks` (preço, incremento, tipo, level).
+- **Permissões padrão:** template em `Core.Permissions`/`SavePermissions` (nível 1 = acesso total).

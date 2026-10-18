@@ -1,0 +1,144 @@
+---
+title: "Apresentação"
+description: "Conheça o Five Game, o sistema de partidas competitivas (arena, plante/desarme, economia e duelo) para FiveM."
+---
+
+O **Five Game** é um sistema completo de partidas competitivas para servidores FiveM. Os jogadores abrem o tablet, criam ou entram em uma partida, escolhem modo de jogo, mapa, rounds, armas e apostas, e disputam no formato melhor de N rounds com troca de lados, placar ao vivo, kill feed, ranking persistente e tela de resultado.
+
+São dois modos de jogo — **Arena** e **Plante/Desarme** — com uma camada opcional de **Economia** (dinheiro por round e loja de armamentos ao estilo CS) e um modo **Duelo**, com times fixos, desafio entre líderes e votação de mapa e arma.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Tablet de partidas" icon="tablet-screen-button">
+    Interface NUI com quatro abas: Partidas, Duelo, Espectar e Meu Perfil e Ranking.
+  </Card>
+
+  <Card title="Dois modos de jogo" icon="crosshairs">
+    Arena (último time vivo vence o round) e Plante/Desarme (atacantes plantam a C4, defensores desarmam).
+  </Card>
+
+  <Card title="Modo economia" icon="cart-shopping">
+    Dinheiro por round e abate, loja de armamentos na fase de compra, coletes, kit de desarme e drop de armas no chão.
+  </Card>
+
+  <Card title="Modo duelo" icon="shield-halved">
+    Times fixos com nome, senha e avatar. O líder desafia outro time e os dois lados votam mapa e modo de arma.
+  </Card>
+
+  <Card title="Ranking e perfil" icon="ranking-star">
+    Vitórias, derrotas, abates e mortes salvos no banco de dados, com top 10 por vitórias, abates ou KDR.
+  </Card>
+
+  <Card title="Melhor de N rounds" icon="trophy">
+    A partida é definida pela quantidade de rounds, com vitória para o primeiro time a fazer mais da metade.
+  </Card>
+
+  <Card title="Troca de lados" icon="arrows-rotate">
+    Inversão automática de bases e papéis na metade da partida. Obrigatória no Plante/Desarme.
+  </Card>
+
+  <Card title="Apostas em dinheiro" icon="coins">
+    Cada jogador paga o valor da aposta ao iniciar e o prêmio acumulado é dividido entre os vencedores.
+  </Card>
+
+  <Card title="Granada de fumaça" icon="cloud">
+    Fumaça própria do recurso, que bloqueia a visão de quem está do outro lado e embaça a tela de quem entra nela.
+  </Card>
+
+  <Card title="Placar ao vivo" icon="table-list">
+    Segure a tecla configurada durante a partida para ver os dois times com abates, mortes e KDR em tempo real.
+  </Card>
+
+  <Card title="Espectador" icon="eye">
+    Assista partidas em andamento pela aba Espectar e acompanhe os companheiros de time após morrer no round.
+  </Card>
+
+  <Card title="Cor de accent única" icon="palette">
+    Toda a interface deriva de uma única cor configurável, com re-tema instantâneo.
+  </Card>
+</CardGroup>
+
+---
+
+## O tablet
+
+O tablet é aberto pelo comando (`fivegame` por padrão), por um marker no mapa ou pelo evento de integração. Ele concentra tudo o que acontece fora da partida.
+
+<AccordionGroup>
+  <Accordion title="Partidas" icon="table-cells-large">
+    Lista os lobbies abertos e em andamento. É onde o jogador cria uma partida, entra em uma existente (com senha, se houver), escolhe time e slot, marca pronto e o dono inicia a partida.
+  </Accordion>
+
+  <Accordion title="Duelo" icon="shield-halved">
+    Lista os times de duelo. O jogador cria um time (nome, avatar e senha opcional) ou entra em um já existente. O líder desafia outro time e a partida começa após a votação de mapa e arma.
+  </Accordion>
+
+  <Accordion title="Espectar" icon="eye">
+    Lista as partidas em andamento que permitem espectadores. Administradores enxergam também as partidas com espectadores desativados.
+  </Accordion>
+
+  <Accordion title="Meu Perfil e Ranking" icon="user">
+    Mostra o perfil do jogador (avatar, vitórias, derrotas, abates e mortes) e o top 10 do servidor por vitórias, abates ou KDR. O avatar é definido por URL de imagem `.png` ou `.gif`.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  Um jogador não pode estar em um time de duelo e em um lobby de partida ao mesmo tempo. As abas bloqueadas mostram o motivo ao passar o mouse.
+</Info>
+
+---
+
+## Dentro da partida
+
+<CardGroup cols={2}>
+  <Card title="HUD da partida" icon="display">
+    Placar dos dois times, tempo do round, jogadores vivos, aviso de bomba plantada e o roster de cada equipe.
+  </Card>
+
+  <Card title="HUD do jogador" icon="heart-pulse">
+    Vida, colete, munição, arma atual, avatar e — nas partidas com economia — o dinheiro disponível.
+  </Card>
+
+  <Card title="Hotbar de armas" icon="grip">
+    Quatro slots (primária, pistola, faca e granadas) trocados pelas teclas de seleção de arma do GTA. A roda de armas fica desativada.
+  </Card>
+
+  <Card title="Kill feed" icon="skull">
+    Cada abate aparece no canto da tela com os nomes e o time de quem matou e de quem morreu.
+  </Card>
+
+  <Card title="Placar ao vivo" icon="list-ol">
+    Segure a tecla configurada em `scoreboardKey` (padrão `TAB`) para abrir o placar completo com abates, mortes e KDR.
+  </Card>
+
+  <Card title="Tela de resultado" icon="flag-checkered">
+    Ao fim da partida, mostra vitória ou derrota, o prêmio da aposta e o placar final de cada jogador.
+  </Card>
+</CardGroup>
+
+<Note>
+  Cada partida roda em um routing bucket isolado. Vida, colete, posição e inventário do jogador são guardados na entrada e restaurados automaticamente na saída.
+</Note>
+
+---
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Modos de jogo" icon="gamepad" href="/five-game/modos">
+    Entenda as regras de Arena, Plante/Desarme, Economia e Duelo.
+  </Card>
+
+  <Card title="Instalação" icon="download" href="/five-game/instalacao">
+    Dependências, token de licença e integração com o seu framework.
+  </Card>
+
+  <Card title="Configuração" icon="sliders" href="/five-game/configuracao">
+    Referência completa do arquivo `shared/config.lua`.
+  </Card>
+
+  <Card title="Integração" icon="code" href="/five-game/api/exports">
+    Exports, eventos e estados para conectar o Five Game à sua base.
+  </Card>
+</CardGroup>

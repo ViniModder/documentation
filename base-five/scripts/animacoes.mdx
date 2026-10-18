@@ -1,0 +1,72 @@
+---
+title: "animacoes"
+description: "Sistema de animações e emotes (danças, poses, props nas mãos) para os jogadores, com mais de 600 emotes pré-configurados."
+---
+
+O **animacoes** é o sistema de animações e emotes da base — danças, poses e props nas mãos — com mais de 600 emotes pré-configurados. É um recurso exclusivamente client-side.
+
+A lógica e a lista de emotes ficam em `client-side/core.lua`. As animações são disparadas pelo evento `emotes`, que recebe o nome do emote e executa via `vRP.playAnim` ou, quando há prop, via `vRP.CreateObjects`. Arquivos `.ycd` customizados ficam em `stream/`.
+
+<Note>
+  **Travas de segurança:** o emote só toca se o jogador **não** estiver armado (`IsPedArmed`), nadando, com vida \< 100, ou nos estados `Commands`, `Buttons`, `Cancel`, `Handcuff`. Emotes marcados com `cars` só tocam dentro de veículos.
+</Note>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="gears">
+    `playAnim` e `CreateObjects` para reproduzir animações e criar props.
+  </Card>
+
+  <Card title="PolyZone" icon="map-pin">
+    Suporte a zonas.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+A lista é a tabela local `animacoes` em `client-side/core.lua`, indexada pelo nome do emote.
+
+| Campo | Descrição |
+| --- | --- |
+| `dict` / `anim` | Dicionário e nome da animação. |
+| `walk` | `true` permite andar. |
+| `loop` | `true` mantém em loop. |
+| `prop` | Modelo do objeto na mão (opcional). |
+| `flag`, `mao`, `altura`, `pos1`..`pos5` | Parâmetros do prop (bone, offsets, rotação). |
+| `cars` | Se definido, só funciona em veículo. |
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| `emotes` | Cliente | Recebe `Name` (chave da tabela `animacoes`) e reproduz o emote. Ponto de entrada usado por outros recursos (menu de interação/telefone). |
+
+```lua
+TriggerEvent("emotes", "dancar5")
+```
+
+---
+
+## Customização
+
+Adicione uma entrada na tabela `animacoes`:
+
+```lua
+-- Animação simples
+["minhadanca"] = { dict = "anim@meu_dict", anim = "minha_anim", walk = false, loop = true },
+
+-- Com prop na mão
+["minhacaixa"] = { dict = "anim@heists@box_carry@", anim = "idle", prop = "hei_prop_heist_box",
+    flag = 50, mao = 60309, altura = 0.025, pos1 = 0.08, pos2 = 0.255, pos3 = -50.0, pos4 = 290.0, pos5 = 0.0 },
+```
+
+<Tip>
+  Toque com `TriggerEvent("emotes", "minhadanca")`. Animações `.ycd` customizadas vão em `stream/`.
+</Tip>

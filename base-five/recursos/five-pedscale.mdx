@@ -1,0 +1,107 @@
+---
+title: "five-pedscale"
+description: "Painel NUI para personalizar a altura/escala do personagem (ped), com presets, slider de ajuste fino, persistência local e sincronização visual entre jogadores próximos."
+---
+
+O **five-pedscale** permite que cada jogador ajuste a escala do próprio ped (efeito de "altura") por um painel aberto por comando. A escala é salva localmente em **KVP** (persiste entre sessões no mesmo PC) e publicada no statebag do jogador, permitindo que outros clients apliquem o efeito visual em peds próximos. Não é aplicado a peds com vida baixa (`<= 101`). Funcionalidade puramente client-side (sem lógica server).
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Ajuste de altura" icon="ruler-vertical">
+    Painel NUI para personalizar a escala do próprio ped, com presets e slider de ajuste fino.
+  </Card>
+
+  <Card title="Persistência local" icon="floppy-disk">
+    A escala é salva em KVP e persiste entre sessões no mesmo computador.
+  </Card>
+
+  <Card title="Sincronização visual" icon="users">
+    A escala é publicada no statebag e aplicada em peds de jogadores próximos.
+  </Card>
+
+  <Card title="Client-side" icon="display">
+    Funcionalidade puramente client-side, sem lógica de servidor.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="puzzle-piece">
+    Carrega `@vrp/config/Global.lua` (tabela `Theme`). Sem oxmysql/banco.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — Configurações principais" icon="sliders">
+    Tabela `PedScale`:
+
+    ```lua
+    PedScale.ThemeColor = "#0143bb"   -- Theme.main tem prioridade
+    PedScale.DefaultScale = 1.0       -- 1.0 = tamanho original (e valor do "Resetar")
+    PedScale.SyncDistance = 30.0      -- distância (m) para aplicar a escala de outros
+    
+    PedScale.Commands = { "altura", "tamanho" }   -- comandos que abrem o painel
+    
+    PedScale.Range = { Min = 0.93, Max = 1.038, Step = 0.001 }  -- limites do slider
+    
+    PedScale.Presets = {
+        { id = "small",  label = "Baixo",  value = 0.93 },
+        { id = "medium", label = "Médio",  value = 0.965 },
+        { id = "normal", label = "Normal", value = 1.0 },
+        { id = "large",  label = "Alto",   value = 1.038 },
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Os comandos abaixo abrem o painel de ajuste de altura.
+
+| Comando | Permissão | Descrição |
+| --- | --- | --- |
+| `/altura` | Nenhuma | Abre/fecha o painel de ajuste de altura (não abre com vida `<= 101`). |
+| `/tamanho` | Nenhuma | Mesmo comportamento de `/altura` (ambos vêm de `PedScale.Commands`). |
+
+---
+
+## Localizações
+
+<Info>
+  Não há locais fixos no mundo. O recurso é puramente client-side/UI: a escala é aplicada ao ped do próprio jogador (e sincronizada nos peds de jogadores próximos dentro de `PedScale.SyncDistance = 30.0`), sem NPCs, blips, lojas ou zonas.
+</Info>
+
+---
+
+## Exports
+
+Nenhum export Lua. Callbacks NUI: `applyScale`, `resetScale`, `close`.
+
+---
+
+## Banco de Dados
+
+<Note>
+  Nenhum. Persistência local via **KVP** (`SetResourceKvpFloat("PedScale", ...)`).
+</Note>
+
+---
+
+## Customização
+
+- **Cor:** `PedScale.ThemeColor` (ou `Theme.main`).
+- **Distância de sync:** `PedScale.SyncDistance`.
+
+<Tip>
+  Ajuste `PedScale.Range` e `PedScale.Presets` para mudar os limites do slider e as opções rápidas de altura disponíveis no painel.
+</Tip>

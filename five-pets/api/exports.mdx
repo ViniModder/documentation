@@ -1,0 +1,283 @@
+---
+title: "Exports"
+description: "Funções exportadas pelo Five Pets para integração com outros scripts do servidor."
+---
+
+Os exports do Five Pets permitem que outros recursos do servidor leiam benefícios, concedam XP, abram lootboxes e manipulem instâncias diretamente. Todos os exports são **server-side**.
+
+<Note>
+  O parâmetro `passport` corresponde ao identificador único do jogador definido pela sua integração em `config/functions.lua` (função `getUserId`).
+</Note>
+
+<Tip>
+  Quando `Pets.Features.Benefits = false`, os exports `GetFlat`, `GetBonus`, `GetReduce` e `Apply` retornam valor neutro (`0` para flat, `1.0` para percent) e `GrantXP` vira no-op — sem afetar a coleção do jogador.
+</Tip>
+
+---
+
+## GetFlat
+
+Retorna o valor absoluto (flat) de um benefício do tipo numérico inteiro, como slots de mochila, stamina e capacidade de inventário.
+
+```lua
+local value = exports["core-pets"]:GetFlat(passport, key)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | user\_id do jogador |
+| `key` | `string` | Chave do benefício (ex: `"Stamina"`) |
+
+**Retorno:** `number` — valor somado de todos os pets equipados com esse benefício. Retorna `0` se nenhum pet ativo tiver o benefício.
+
+**Exemplo**
+
+```lua
+local stamina = exports["core-pets"]:GetFlat(passport, "Stamina")
+-- Ex: retorna 14 (jogador tem um pet nível 7 com Stamina)
+```
+
+---
+
+## GetBonus
+
+Retorna o multiplicador a ser aplicado para um benefício do tipo `percent` (ex: salário, venda, sorte). O retorno já vem como multiplicador pronto para multiplicar o valor base.
+
+```lua
+local bonus = exports["core-pets"]:GetBonus(passport, key)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | user\_id do jogador |
+| `key` | `string` | Chave do benefício (ex: `"DrugSell"`) |
+
+**Retorno:** `number` — multiplicador `≥ 1.0`. Retorna `1.0` quando nenhum pet equipado possui o benefício (sem bônus). Para chaves do tipo `flat` o retorno é o valor flat acumulado, para preservar consistência.
+
+**Exemplo**
+
+```lua
+local bonus      = exports["core-pets"]:GetBonus(passport, "DrugSell")
+local finalPrice = price * bonus  -- ex: price * 1.05 para +5%
+```
+
+---
+
+## GetReduce
+
+Retorna um multiplicador de redução pronto para aplicar (`1.0 - bonus/100`). Ideal para benefícios que **diminuem** um custo ou tempo.
+
+```lua
+local multiplier = exports["core-pets"]:GetReduce(passport, key)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | user\_id do jogador |
+| `key` | `string` | Chave do benefício (ex: `"CraftTimeReduce"`) |
+
+**Retorno:** `number` — multiplicador entre `0.0` e `1.0`. Retorna `1.0` se nenhum pet tiver o benefício (sem redução).
+
+**Exemplo**
+
+```lua
+local multiplier = exports["core-pets"]:GetReduce(passport, "FuelReduce")
+local fuelCost = baseCost * multiplier
+-- Se multiplier = 0.95, reduz 5% do custo
+```
+
+---
+
+## Apply
+
+Aplica automaticamente o benefício correto sobre um valor base, detectando se é flat, bonus ou reduce. Atalho para os três exports anteriores.
+
+```lua
+local result = exports["core-pets"]:Apply(passport, key, value)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | user\_id do jogador |
+| `key` | `string` | Chave do benefício |
+| `value` | `number` | Valor base a ser modificado |
+
+**Retorno:** `number` — valor com o benefício aplicado.
+
+**Exemplo**
+
+```lua
+local salary = exports["core-pets"]:Apply(passport, "Salary", baseSalary)
+```
+
+---
+
+## GrantXP
+
+Concede XP para os pets equipados do jogador que possuem um benefício específico ativo. O XP é aplicado somente nos pets que realmente têm aquele benefício.
+
+```lua
+exports["core-pets"]:GrantXP(passport, key, amountOverride)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Obrigatório | Descrição |
+| --- | --- | :-: | --- |
+| `passport` | `number` | ✓ | user\_id do jogador |
+| `key` | `string` | ✓ | Chave do benefício que deve estar ativo no pet |
+| `amountOverride` | `number` |  | Quantidade de XP a conceder. Usa o valor padrão da chave se omitido. |
+
+**Exemplo**
+
+```lua
+-- Ao jogador coletar uma rota, concede XP nos pets com CollectRoute
+exports["core-pets"]:GrantXP(passport, "CollectRoute")
+
+-- Ou com valor personalizado
+exports["core-pets"]:GrantXP(passport, "DrugSell", 20)
+```
+
+---
+
+## OpenLootBox
+
+Sorteia uma pelúcia aleatória, cria uma nova instância e a adiciona à coleção do jogador. Usado para sistemas de lootbox, recompensas de missão, etc.
+
+```lua
+local result = exports["core-pets"]:OpenLootBox(passport, fixedRarity)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Obrigatório | Descrição |
+| --- | --- | :-: | --- |
+| `passport` | `number` | ✓ | user\_id do jogador |
+| `fixedRarity` | `string` |  | Força uma raridade específica (`"commom"`, `"rare"`, etc.). Sorteio livre se omitido. |
+
+**Retorno:** `table` com os dados da instância criada, ou `nil` se o jogador já possui todas as pelúcias disponíveis.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `instance_id` | `number` | ID da instância gerada |
+| `item_key` | `string` | Chave da pelúcia sorteada |
+| `rarity` | `string` | Raridade efetivamente sorteada (após cascata) |
+| `benefits` | `table` | Lista de benefícios atribuídos |
+
+**Comportamento de cascata:** pelúcias que o jogador já possui são excluídas do pool de sorteio. Se a raridade solicitada estiver completamente coletada, o sistema tenta automaticamente raridades abaixo em cascata até encontrar uma disponível.
+
+**Exemplo**
+
+```lua
+-- Lootbox aleatória
+local pet = exports["core-pets"]:OpenLootBox(passport)
+
+-- Lootbox garantida rara (ou inferior em cascata se raro já completo)
+local pet = exports["core-pets"]:OpenLootBox(passport, "rare")
+```
+
+---
+
+## GiveInstance
+
+Cria e adiciona uma instância específica de pelúcia à coleção do jogador, com opções avançadas.
+
+```lua
+local instance = exports["core-pets"]:GiveInstance(passport, itemKey, opts)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Obrigatório | Descrição |
+| --- | --- | :-: | --- |
+| `passport` | `number` | ✓ | user\_id do jogador |
+| `itemKey` | `string` | ✓ | Chave da pelúcia no catálogo |
+| `opts` | `table` |  | Opções adicionais (ver abaixo) |
+
+**Opções (`opts`)**
+
+| Chave | Tipo | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `level` | `number` | `1` | Nível inicial da pelúcia |
+| `xp` | `number` | `0` | XP inicial da pelúcia |
+
+**Retorno:** `table` com os dados da instância criada, ou `nil` se o jogador já possui aquela pelúcia ou se a `itemKey` não existe no catálogo.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `instance_id` | `number` | ID da instância gerada |
+| `benefits` | `table` | Lista de benefícios atribuídos |
+
+**Exemplo**
+
+```lua
+-- Dar um Pikachu nível 3 ao jogador
+local instance = exports["core-pets"]:GiveInstance(passport, "pikachu", { level = 3 })
+
+if not instance then
+    -- jogador já possui este item, ou a chave não existe no catálogo
+end
+```
+
+---
+
+## RemoveInstance
+
+Remove uma instância de pelúcia da coleção do jogador pelo ID da instância.
+
+```lua
+local ok = exports["core-pets"]:RemoveInstance(passport, instanceId)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | user\_id do jogador |
+| `instanceId` | `number` | ID da instância (coluna `id` no banco) |
+
+**Retorno:** `boolean` — `true` quando a chamada é executada, `false` se `passport` ou `instanceId` não foram informados.
+
+---
+
+## GetEquippedPets
+
+Retorna a lista de todas as pelúcias atualmente equipadas pelo jogador.
+
+```lua
+local pets = exports["core-pets"]:GetEquippedPets(passport)
+```
+
+**Parâmetros**
+
+| Nome | Tipo | Descrição |
+| --- | --- | --- |
+| `passport` | `number` | user\_id do jogador |
+
+**Retorno:** `table` (array) com as instâncias equipadas.
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `instance_id` | `number` | ID da instância |
+| `item_key` | `string` | Chave da pelúcia no catálogo |
+| `level` | `number` | Nível atual |
+| `xp` | `number` | XP acumulado no nível atual |
+| `rarity` | `string` | Raridade da pelúcia |
+| `benefits` | `table` | Lista de benefícios ativos |
+
+**Exemplo**
+
+```lua
+local equipped = exports["core-pets"]:GetEquippedPets(passport)
+for _, pet in ipairs(equipped) do
+    print(pet.item_key, "nível", pet.level)
+end
+```

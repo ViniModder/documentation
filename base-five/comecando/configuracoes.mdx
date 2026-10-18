@@ -1,0 +1,212 @@
+---
+title: "Configurações"
+description: "Guia das principais configurações da Five Network, distribuídas entre o server.cfg e os arquivos de config de cada recurso."
+---
+
+As configurações do **Five Network** estão distribuídas entre o `server.cfg` e os arquivos de config de cada recurso.
+
+---
+
+## server.cfg
+
+O arquivo principal de configuração do servidor. Localizado na raiz do projeto.
+
+<AccordionGroup>
+  <Accordion title="Configurações Essenciais" icon="gears">
+    ```cfg
+    # Identidade do servidor
+    sv_hostname "Five Network | Roleplay BR"
+    sv_projectName "CoreNetwork"
+    sv_projectDesc "Servidor de Roleplay Brasileiro"
+    
+    # Licença (obrigatório)
+    sv_licenseKey "cfxk_xxxxxxxxxxxx"
+    
+    # Banco de dados
+    set mysql_connection_string "mysql://user:pass@localhost/fivenetwork"
+    
+    # Slots
+    sv_maxclients 128
+    
+    # Build do jogo (não altere)
+    sv_enforceGameBuild 3095
+    
+    # OneSync (obrigatório para bases grandes)
+    onesync on
+    ```
+  </Accordion>
+
+  <Accordion title="Variáveis usadas pelos recursos" icon="globe">
+    Estas são as `set`/`setr` que a base realmente lê em tempo de execução:
+
+    ```cfg
+    # Chave da Steam Web API (usada na identificação dos jogadores)
+    set steam_webApiKey "sua_chave_aqui"
+
+    # Aviso no console para queries lentas (ms)
+    set mysql_slow_query_warning 150
+
+    # Token de autenticação dos recursos protegidos
+    set core_auth ""
+
+    # Perfil de efeitos visuais do client
+    setr profile_skfx 0
+
+    # Webhooks lidos por recursos específicos
+    setr Discord_MDT ""
+    setr Discord_EMS ""
+    setr Discord_FREECAM ""
+    ```
+
+    <Note>
+      Os demais webhooks não ficam no `server.cfg`: cada recurso tem o seu `config/webhooks.lua`.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Permissões de console (ACE)" icon="terminal">
+    O bloco de ACE define quem pode rodar comandos pelo painel/console. Troque o identificador pelo seu:
+
+    ```cfg
+    add_ace group.admin command allow
+    add_ace group.admin command.quit deny
+    add_principal identifier.steam:SEU_IDENTIFICADOR group.admin
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  O `server.cfg` que acompanha a base vem com `sv_maxClients 5` e a string de conexão apontando para o banco `corenetwork`. Ajuste os dois antes de abrir o servidor ao público.
+</Warning>
+
+---
+
+## Configurações por Recurso
+
+Cada recurso possui uma pasta `config/` com arquivos Lua de configuração.
+
+<AccordionGroup>
+  <Accordion title="vRP Framework — resources/vrp/config/" icon="code">
+    | Arquivo | O que configura |
+    | --- | --- |
+    | `Global.lua` | Moeda, `SalaryCooldown`, tabela `Groups`, `Theme`, slots de inventário e CDN de itens |
+    | `Item.lua` | Definição de todos os itens do servidor |
+    | `Vehicle.lua` | Lista de veículos e suas propriedades |
+    | `Drops.lua` | Configuração de drops no chão |
+    | `Native.lua` | Ajustes de natives aplicados pelo framework |
+    | `inventory/` e `textures/` | Assets auxiliares do inventário |
+  </Accordion>
+
+  <Accordion title="Five Vehicles — resources/[five]/five-vehicles/config/" icon="car">
+    | Arquivo | O que configura |
+    | --- | --- |
+    | `general.lua` | `ThemeColor`, menu de veículos (`vehMenu`), placas fixas de aluguel, bloqueio de veículos de NPC e hooks de API |
+    | `garages.lua` | Todas as garagens do mapa |
+    | `dealership.lua` | Concessionárias e test drive |
+    | `mechanics.lua` | Oficinas e serviços mecânicos |
+    | `commands.lua` | Comandos registrados pelo recurso |
+    | `vehicles.lua` | Catálogo de veículos do recurso |
+    | `framework.lua` | Ponte com o vRP |
+    | `notify.lua` | Textos e estilos das notificações |
+  </Accordion>
+
+  <Accordion title="Five Bank — resources/[five]/five-bank/config/" icon="building-columns">
+    | Arquivo | O que configura |
+    | --- | --- |
+    | `config.lua` | Pontos de atendimento, tipos de conta conjunta e limites |
+    | `functions.lua` | Ponte com o vRP e o oxmysql |
+  </Accordion>
+
+  <Accordion title="Five Jobs — resources/[five]/five-jobs/config/" icon="briefcase">
+    | Arquivo | O que configura |
+    | --- | --- |
+    | `config.lua` | Regras gerais dos empregos |
+    | `professions.lua` | Profissões disponíveis |
+    | `routes.lua` | Rotas e entregas |
+    | `functions.lua` | Ponte com o framework |
+    | `webhooks.lua` | Webhooks de log do recurso |
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Quase todo recurso da pasta `[five]` segue o mesmo padrão: `config/config.lua` para as regras, `config/functions.lua` como ponte com o framework e `config/webhooks.lua` para os logs.
+</Tip>
+
+---
+
+## Adicionando Novos Recursos
+
+Para adicionar um novo recurso:
+
+<Steps>
+  <Step title="Posicione a pasta do recurso">
+    Coloque a pasta do recurso em `resources/[pasta-adequada]/`.
+  </Step>
+  <Step title="Adicione ao server.cfg">
+    ```cfg
+    # Para iniciar um recurso individual:
+    start nome_do_recurso
+    
+    # Para iniciar todos em uma pasta:
+    start [nome-da-pasta]
+    ```
+  </Step>
+  <Step title="Execute o SQL, se houver">
+    Se o recurso tem tabelas no banco, execute o SQL de criação.
+  </Step>
+  <Step title="Reinicie o servidor">
+    Reinicie o servidor para carregar o novo recurso.
+  </Step>
+</Steps>
+
+---
+
+## Configuração de Voz (pma-voice)
+
+```cfg
+# Configurações no server.cfg
+setr voice_maxRange 30.0            # Alcance máximo da voz
+setr voice_enableProximity true     # Voz por proximidade
+setr voice_defaultCycle "PROXIMITY" # Modo padrão
+```
+
+---
+
+## OneSync
+
+```cfg
+# Habilita OneSync (necessário para > 32 jogadores e recursos avançados)
+onesync on
+
+# Modo infinity para servidores grandes
+# onesync_enableInfinity true
+```
+
+---
+
+## Configuração de Webhooks Discord
+
+Vários recursos suportam webhooks para logs no Discord. Configure nos arquivos de configuração de cada recurso:
+
+```lua
+Config.Webhook = "https://discord.com/api/webhooks/xxx/yyy"
+Config.WebhookName = "Five Network Logs"
+```
+
+<Tip>
+  Use um webhook por canal/área (compras, banimentos, transações) para manter os logs organizados no seu Discord.
+</Tip>
+
+---
+
+## Arquivos de Configuração UI (NUI)
+
+Alguns recursos possuem um `config.ui.js` na pasta `config/` para configurar aspectos visuais das interfaces React:
+
+```javascript
+// Exemplo de config.ui.js
+export default {
+  primaryColor: "#0143BB",
+  serverName: "Five Network",
+  logo: "https://exemplo.com/logo.png"
+}
+```

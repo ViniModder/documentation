@@ -1,0 +1,105 @@
+---
+title: "marriage"
+description: "Sistema de casamento/relacionamento: um jogador faz o pedido a outro; após aceite e pagamento, ambos recebem uma aliança personalizada com o passaporte do parceiro."
+---
+
+O **marriage** é um sistema de casamento/relacionamento: um jogador faz o pedido a outro e, após o aceite e o pagamento, ambos recebem uma aliança personalizada com o passaporte do parceiro. A NUI é informativa (exibe aceite/rejeição com o nome do parceiro).
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Pedido entre jogadores" icon="ring">
+    Um jogador inicia o pedido ao alvo, com animação de ajoelhar e caixa de anel.
+  </Card>
+  <Card title="Confirmação interativa" icon="hand-pointer">
+    O alvo aceita ou recusa o pedido via `vRP.Request`.
+  </Card>
+  <Card title="Pagamento" icon="money-bill">
+    Cobra R$20.000 do solicitante no aceite; sem saldo, o pedido é cancelado.
+  </Card>
+  <Card title="Aliança personalizada" icon="gem">
+    Cada jogador recebe uma aliança cujo item incorpora o passaporte do parceiro.
+  </Card>
+</CardGroup>
+
+---
+
+## Como funciona
+
+Fluxo, a partir do evento `marriage:Request` (com o `source` do alvo):
+
+<Steps>
+  <Step title="Validação">
+    Valida passaportes/identidades de ambos.
+  </Step>
+  <Step title="Animação e objeto">
+    Reproduz no solicitante a animação de ajoelhar e cria o objeto da caixa de anel (`ultra_ringcase`) preso à mão.
+  </Step>
+  <Step title="Confirmação ao alvo">
+    Envia confirmação ao alvo via `vRP.Request` ("Aceitar pedido de **\<Nome\>**?").
+  </Step>
+  <Step title="Resposta">
+    - **Recusado** → `marriage:Reject` (NUI exibe rejeição).
+    - **Aceito** → cobra **R$20.000** (`vRP.PaymentFull`); sem saldo, notifica e cancela.
+  </Step>
+  <Step title="Geração das alianças">
+    Gera as alianças para cada jogador e dispara `marriage:Accept` para ambos.
+  </Step>
+</Steps>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="layer-group">
+    Proxy: `Passport`, `Identity`, `Request`, `PaymentFull`, `TakeItem`, `GenerateItem`. Tunnel: `playAnim`, `CreateObjects`.
+  </Card>
+  <Card title="inventory" icon="box">
+    Dispara `inventory:Notify`.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+Sem arquivo de config. Valores fixos em `server-side/core.lua`:
+
+| Valor | Definição |
+|---|---|
+| Custo | `R$20.000` (`vRP.PaymentFull(p,20000,true)`) |
+| Animação | `amb@medic@standing@kneel@idle_a` / `idle_a` |
+| Objeto do anel | `ultra_ringcase` (bone 28422, offsets fixos) |
+| Itens de aliança | `alliance` (ou `alliance2` se consumir `alliance3`) |
+
+---
+
+## Comandos
+
+Nenhum. O fluxo inicia pelo evento `marriage:Request` (acionado externamente).
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+|---|---|---|
+| `marriage:Request` | Servidor | Inicia o pedido com o `OtherSource` do alvo: anima, cria o anel e envia a confirmação. |
+| `marriage:Accept` | Cliente | Recebe o `Name` do parceiro e repassa o aceite à NUI. |
+| `marriage:Reject` | Cliente | Recebe o `Name` do parceiro e exibe a rejeição na NUI. |
+
+---
+
+## Banco de Dados
+
+Sem queries diretas. A persistência ocorre via geração de itens vRP: `alliance-<PassaporteDoParceiro>` (ou `alliance2-<...>`), 1 unidade por jogador (o nome incorpora o passaporte do parceiro).
+
+---
+
+## Customização
+
+- **Custo:** valor `20000` em `vRP.PaymentFull` (`server-side/core.lua`).
+- **Item da aliança:** `alliance` / `alliance2` / `alliance3`.
+- **Animação/objeto:** parâmetros de `playAnim` e `CreateObjects`.
+- **Texto do pedido:** mensagem de `vRP.Request`.

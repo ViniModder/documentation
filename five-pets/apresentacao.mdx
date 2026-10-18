@@ -1,0 +1,147 @@
+---
+title: "Apresentação"
+description: "Conheça o Five Pets, o sistema completo de coleção e gerenciamento de pelúcias para FiveM."
+---
+
+O **Five Pets** é um sistema completo de coleção, gerenciamento e exibição de pelúcias para servidores FiveM. Com mais de 30 itens colecionáveis divididos em categorias e raridades, cada jogador pode possuir **um exemplar de cada pelúcia**, formando uma coleção única. O script oferece mecânicas profundas de progressão, troca entre jogadores, fusão de itens e benefícios passivos que impactam diretamente a gameplay.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Coleção de Pelúcias" icon="trophy">
+    Mais de 30 pelúcias divididas em 8 categorias, cada uma com raridade, nível e benefícios únicos.
+  </Card>
+
+  <Card title="Equip em 3D" icon="cube">
+    Equipe pelúcias diretamente no modelo do personagem em múltiplas posições do corpo com sincronização entre jogadores.
+  </Card>
+
+  <Card title="Sistema de XP e Level" icon="chart-line">
+    Evolua suas pelúcias até o nível máximo da raridade ganhando XP por ações no servidor.
+  </Card>
+
+  <Card title="Benefícios Passivos" icon="sparkles">
+    16 tipos de benefícios que afetam stamina, salário, crafting, combustível, vendas e muito mais.
+  </Card>
+
+  <Card title="Troca entre Jogadores" icon="arrow-right-arrow-left">
+    Propostas de troca assíncronas (não exigem ambos online), com inbox/outbox e validação de disponibilidade nos dois lados na hora do aceite.
+  </Card>
+
+  <Card title="Fusão de Pelúcias" icon="wand-magic-sparkles">
+    Combine duas pelúcias para tentar criar uma de raridade superior com sistema probabilístico.
+  </Card>
+
+  <Card title="Painel Admin" icon="shield">
+    Gerencie coleções dos jogadores com comandos para dar, remover, consultar e auditar itens.
+  </Card>
+
+  <Card title="Webhooks Discord" icon="discord">
+    Auditoria completa de todas as ações relevantes enviada automaticamente para canais do Discord.
+  </Card>
+</CardGroup>
+
+---
+
+## Sistema de Raridades
+
+Cada pelúcia possui uma raridade que define seu nível máximo, quantidade de benefícios e multiplicadores de progressão.
+
+| Raridade | Nível Máximo | Benefícios | Multiplicador | Peso de Drop |
+| --- | :-: | :-: | :-: | :-: |
+| Comum | 5 | 1 | 0.6× | 50 |
+| Incomum | 6 | 1–2 | 0.8× | 30 |
+| Raro | 8 | 2 | 1.0× | 13 |
+| Épico | 9 | 2–3 | 1.2× | 5 |
+| Lendário | 10 | 3–4 | 1.5× | 2 |
+
+<Tip>
+  Pelúcias lendárias acumulam até 4 benefícios e possuem o maior multiplicador de crescimento por level-up. Elas também têm o maior nível máximo (10).
+</Tip>
+
+---
+
+## Sistema de Benefícios
+
+Cada pelúcia recebe benefícios aleatórios ao ser criada. Os benefícios ficam ativos enquanto a pelúcia estiver equipada e crescem conforme o nível evolui.
+
+<AccordionGroup>
+  <Accordion title="Benefícios do tipo Flat (valor absoluto)" icon="plus">
+    | Benefício | Progressão por nível | Descrição |
+    | --- | --- | --- |
+    | Stamina | \+2 por nível (máx 20) | Aumenta a stamina do personagem |
+    | BackpackSlot | 1→1→1→2→2→2→3→3→3→4 | Slots extras de mochila |
+    | InventoryWeight | \+1 por nível (máx 10) | Capacidade extra de inventário |
+    | UnderwaterBreath | \+3 por nível (máx 30) | Fôlego adicional embaixo d'água |
+  </Accordion>
+
+  <Accordion title="Benefícios do tipo Percent (bônus percentual)" icon="percent">
+    | Benefício | Progressão por nível | Descrição |
+    | --- | --- | --- |
+    | CollectRoute | \+2% por nível (máx 18%) | Bônus na coleta de rotas |
+    | DrugSell | \+0.5% por nível (máx 5%) | Bônus na venda de drogas |
+    | SuperDrugSell | \+0.5% por nível (máx 5%) | Bônus na venda de super drogas |
+    | LegalJob | \+1% por nível (máx 10%) | Bônus em empregos legais |
+    | Salary | \+0.5% por nível (máx 5%) | Bônus no salário |
+    | CraftTimeReduce | \+1% por nível (máx 10%) | Redução no tempo de crafting |
+    | SkinLuck | \+0.5% por nível (máx 5%) | Sorte em skins/drops |
+    | LaundryFeeReduce | \+1% por nível (máx 10%) | Redução na taxa de lavagem |
+    | HungerReduce | \+1% por nível (máx 10%) | Redução na perda de fome |
+    | ThirstReduce | \+1% por nível (máx 10%) | Redução na perda de sede |
+    | C4TimeReduce | \+1% por nível (máx 10%) | Redução no tempo de plantio de C4 |
+    | FuelReduce | \+0.5% por nível (máx 5%) | Redução no consumo de combustível |
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Sistema de XP e Level
+
+As pelúcias ganham XP quando o jogador realiza ações no servidor enquanto elas estão equipadas e possuem o benefício correspondente ativo.
+
+| De → Para | XP Necessário |
+| :-: | :-: |
+| 1 → 2 | 100 XP |
+| 2 → 3 | 250 XP |
+| 3 → 4 | 500 XP |
+| 4 → 5 | 800 XP |
+| 5 → 6 | 1.200 XP |
+| 6 → 7 | 1.700 XP |
+| 7 → 8 | 2.300 XP |
+| 8 → 9 | 3.000 XP |
+| 9 → 10 | 3.800 XP |
+
+O XP é concedido por outros scripts via export [`GrantXP`](/five-pets/api/exports#grantxp). A cada level-up, o valor do benefício cresce de acordo com o multiplicador de raridade da pelúcia.
+
+---
+
+## Sistema de Fusão
+
+A fusão permite combinar duas pelúcias para tentar criar uma nova de raridade superior.
+
+<Steps>
+  <Step title="Seleção">
+    O jogador seleciona duas pelúcias diferentes da sua coleção como material de fusão.
+  </Step>
+  <Step title="Escolha da raridade alvo">
+    Define-se a raridade desejada para o resultado. Quanto maior a raridade alvo em relação às pelúcias usadas, menor a chance de sucesso.
+  </Step>
+  <Step title="Cálculo de chance">
+    A fórmula considera a diferença de raridade entre o alvo e o material, com bônus de \+10% se ambas forem da mesma raridade. A chance fica entre **1% e 90%**.
+  </Step>
+  <Step title="Resultado">
+    - **Sucesso:** uma nova pelúcia da raridade alvo é criada, excluindo as que o jogador já possui.
+    - **Falha:** uma nova pelúcia da **pior raridade** dos materiais é criada.
+    - Em ambos os casos, as duas pelúcias originais são **consumidas**.
+    - Se o jogador já possui todas as pelúcias da raridade alvo, o sistema tenta automaticamente uma raridade abaixo em cascata.
+  </Step>
+</Steps>
+
+---
+
+## Catálogo de Pelúcias
+
+As pelúcias estão organizadas em 8 categorias temáticas.
+
+<CardGroup cols={4}>
+</CardGroup>

@@ -1,0 +1,477 @@
+---
+title: "Configuração"
+description: "Referência completa do arquivo shared/config.lua do Five Game."
+---
+
+Toda a configuração do Five Game fica em `shared/config.lua`. As seções abaixo cobrem cada bloco do arquivo, na mesma ordem em que aparecem.
+
+---
+
+## Sistema
+
+Controla o comando que abre o tablet e as teclas usadas dentro da partida.
+
+```lua
+globalConfig.system = {
+    command        = "fivegame", -- comando que abre o tablet. Use false para desativar.
+    scoreboardKey  = "TAB",      -- tecla para segurar e ver o placar ao vivo.
+    buyMenuControl = 29,         -- controle que abre a loja na fase de compra.
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `command` | Nome do comando que abre o tablet. Defina como `false` para desativar o comando. |
+| `scoreboardKey` | Tecla padrão do placar ao vivo. O jogador pode trocar nas teclas do FiveM. |
+| `buyMenuControl` | Controle que abre a loja de armamentos durante a fase de compra (29 corresponde à tecla <kbd>B</kbd>). |
+
+<Tip>
+  Mesmo com `command = false`, o tablet pode ser aberto pelos markers ou pelo evento de integração. Veja a página de [Eventos](/five-game/api/eventos).
+</Tip>
+
+---
+
+## Markers
+
+Pontos no mapa que abrem o tablet ao interagir, úteis como alternativa ao comando. Adicione as coordenadas em `coords`.
+
+```lua
+globalConfig.markers = {
+    enabled          = true,
+    key              = 38,    -- tecla de interação (38 = E).
+    drawDistance     = 8.0,   -- distância para o marker aparecer.
+    interactDistance = 1.5,   -- distância para poder interagir.
+
+    markerType       = 21,    -- tipo do marker.
+    size             = vec3(0.5, 0.5, 0.5),
+    color            = { r = 1, g = 67, b = 187, a = 180 }, -- cor RGBA (0 a 255).
+
+    coords = {
+        -- vec3(-2132.21, -138.05, 62.46),
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `enabled` | Liga ou desliga o sistema de markers por completo. |
+| `key` | Controle usado para interagir (38 corresponde à tecla <kbd>E</kbd>). |
+| `drawDistance` | Distância em que o marker começa a ser desenhado. |
+| `interactDistance` | Distância máxima para abrir o tablet ao pressionar a tecla. |
+| `markerType` | Tipo visual do marker do FiveM. |
+| `size` | Tamanho do marker nos eixos X, Y e Z. |
+| `color` | Cor do marker no formato RGBA, cada valor de 0 a 255. |
+| `coords` | Lista de coordenadas. Cada `vec3` cria um marker no mapa. |
+
+<Info>
+  Os markers só aparecem fora de partida e com o tablet fechado. Com a lista `coords` vazia, nenhum marker é criado e não há custo de processamento.
+</Info>
+
+---
+
+## Cor de accent
+
+Toda a tonalidade da interface deriva de uma única cor. Trocar `accent` re-tematiza o tablet, o HUD, a loja e as telas.
+
+```lua
+globalConfig.nuiColors = {
+    accent = "#0143bb", -- cor principal da interface.
+}
+```
+
+As variações claras e escuras são calculadas a partir do `accent`.
+
+<Tip>
+  O formato aceito é hexadecimal (`"#3b82f6"`) ou um conjunto de três valores (`{ 59, 130, 246 }`).
+</Tip>
+
+---
+
+## Logo do HUD
+
+Logo exibido no centro do placar durante a partida.
+
+```lua
+globalConfig.hudLogo = ""
+```
+
+Use um link `http(s)` terminado em `.png`, `.jpg` ou `.gif`. Deixe `""` para usar o logo padrão do recurso (`web/logos/logo.png`).
+
+---
+
+## Partidas
+
+Limites gerais aplicados às partidas criadas na aba **Partidas**.
+
+```lua
+globalConfig.matches = {
+    maxBetValue       = 100000, -- valor máximo permitido nas apostas.
+    maxPlayersPerTeam = 10,     -- número máximo de jogadores por time.
+    armour            = false,  -- define se as partidas entregam colete.
+    energetic         = true,   -- liga a mecânica de velocidade extra.
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `maxBetValue` | Teto da aposta. Valores acima são reduzidos a este limite. |
+| `maxPlayersPerTeam` | Quantidade máxima de jogadores por equipe na criação da partida. |
+| `armour` | Quando `true`, os jogadores entram com colete a cada round. |
+| `energetic` | Quando `false`, desativa a mecânica de energético e o bônus de velocidade com a faca em todas as partidas. |
+
+<Info>
+  O **energético** é uma opção da criação da partida: quando ligado, o jogador ganha velocidade extra o tempo todo. Quando desligado, a velocidade extra só vale enquanto ele estiver com a faca na mão. Nas partidas com economia o energético fica sempre desligado.
+</Info>
+
+---
+
+## Duelo
+
+Regras do modo Duelo, com times fixos e votação de mapa e arma.
+
+```lua
+globalConfig.duel = {
+    maxTeamMembers           = 5,  -- máximo de jogadores por time de duelo.
+    mapVoteDuration          = 30, -- segundos de votação de mapa.
+    weaponVoteDuration       = 30, -- segundos de votação de modo de arma (só na arena).
+    challengeResponseTimeout = 10, -- segundos para aceitar ou recusar o desafio.
+    rounds                   = 12, -- rounds quando o modo é Plante/Desarme.
+    arenaRounds              = 6,  -- rounds quando o modo é Arena.
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `maxTeamMembers` | Limite de jogadores por time de duelo. |
+| `mapVoteDuration` | Tempo da votação de mapa. Ela encerra antes se todos votarem. |
+| `weaponVoteDuration` | Tempo da votação de modo de arma, feita apenas no modo Arena. |
+| `challengeResponseTimeout` | Tempo que o líder desafiado tem para responder antes do desafio expirar. |
+| `rounds` | Total de rounds das partidas de duelo no Plante/Desarme. |
+| `arenaRounds` | Total de rounds das partidas de duelo na Arena. |
+
+---
+
+## Plante/Desarme
+
+Tempos e distâncias da bomba.
+
+```lua
+globalConfig.plantDefuse = {
+    plantTime        = 4,    -- segundos parado para plantar.
+    defuseTime       = 10,   -- segundos parado para desarmar sem kit.
+    defuseTimeKit    = 5,    -- segundos parado para desarmar com o kit.
+    explodeTime      = 40,   -- segundos entre o plante e a explosão.
+    defuseRadius     = 3.0,  -- distância máxima da bomba para desarmar.
+    pickupRadius     = 2.0,  -- distância máxima para pegar a bomba no chão.
+    soundVolume      = 0.4,  -- volume base dos sons da bomba (0.0 a 1.0).
+    soundMaxDistance = 45.0, -- distância em que os sons posicionais somem.
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `plantTime` | Tempo segurando a tecla para concluir o plante. |
+| `defuseTime` | Tempo de desarme para quem não tem o kit. |
+| `defuseTimeKit` | Tempo de desarme para quem comprou o kit na loja. |
+| `explodeTime` | Contagem após o plante até a explosão. |
+| `defuseRadius` | Distância máxima da C4 para conseguir desarmar. |
+| `pickupRadius` | Distância máxima para recuperar a C4 derrubada no chão. |
+| `soundVolume` | Volume base dos sons da bomba, de 0.0 a 1.0. |
+| `soundMaxDistance` | Distância em que os sons posicionais deixam de ser ouvidos. |
+
+<Info>
+  No início de cada round a C4 é entregue a um atacante aleatório. Se o portador morre, a bomba cai no chão e qualquer atacante pode recuperá-la dentro do `pickupRadius`. Plantar, desarmar e pegar usam a tecla <kbd>E</kbd>.
+</Info>
+
+---
+
+## Granada de fumaça
+
+Duração e alcance da fumaça própria do recurso.
+
+```lua
+globalConfig.smoke = {
+    explodeTime             = 5000,  -- ms até a granada estourar depois de lançada.
+    smokeTime               = 35000, -- ms que a fumaça permanece no ar.
+    smokeSize               = 2.0,   -- tamanho do efeito de fumaça.
+    smokeVisibilityDistance = 80.0,  -- distância considerada para bloqueio visual.
+    smokeScreenDistance     = 15.0,  -- distância em que a tela fica esbranquiçada dentro da fumaça.
+    maxThrowDistance        = 60.0,  -- distância máxima de arremesso.
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `explodeTime` | Tempo, em milissegundos, entre o arremesso e o estouro da granada. |
+| `smokeTime` | Tempo, em milissegundos, que a nuvem permanece ativa. |
+| `smokeSize` | Escala do efeito visual da fumaça. |
+| `smokeVisibilityDistance` | Distância usada no cálculo de bloqueio de visão entre jogadores. |
+| `smokeScreenDistance` | Distância em que a tela do jogador dentro da nuvem fica esbranquiçada. |
+| `maxThrowDistance` | Alcance máximo do arremesso da granada. |
+
+---
+
+## Economia
+
+Valores do modo economia: dinheiro inicial, bônus por round e por abate.
+
+```lua
+globalConfig.economy = {
+    startMoney          = 800,                -- dinheiro inicial de cada jogador.
+    maxMoney            = 16000,              -- teto de dinheiro acumulado.
+    buyPhaseDuration    = 15,                 -- segundos de loja aberta no início do round.
+    dropPickupRadius    = 2.0,                -- distância para pegar arma largada no chão.
+    defuseKitProp       = "w_am_digiscanner", -- prop do kit de desarme no mundo.
+
+    winBonus            = {
+        elimination   = 3250,
+        bomb_exploded = 3500,
+        bomb_defused  = 3250,
+        timeout       = 3250,
+    },
+
+    lossBonus           = { 1400, 1900, 2400, 2900, 3400 },
+
+    killBonusByCategory = {
+        knife    = 1500,
+        pistols  = 300,
+        smgs     = 600,
+        rifles   = 300,
+        snipers  = 100,
+        grenades = 300,
+    },
+    killBonusDefault    = 300,
+
+    bombPlantBonusTeam  = 800,
+    bombDefuseBonus     = 300,
+    assistBonus         = 50,
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `startMoney` | Dinheiro que cada jogador recebe no início da partida e após a troca de lados. |
+| `maxMoney` | Teto de dinheiro acumulado por jogador. |
+| `buyPhaseDuration` | Duração da fase de compra no início de cada round. Substitui a contagem regressiva normal. |
+| `dropPickupRadius` | Distância máxima para recolher uma arma ou o kit largado no chão. |
+| `defuseKitProp` | Modelo usado para representar o kit de desarme quando ele cai no chão. |
+| `winBonus` | Bônus do time vencedor por motivo da vitória: `elimination`, `bomb_exploded`, `bomb_defused` e `timeout`. |
+| `lossBonus` | Bônus do time perdedor, crescente conforme a sequência de derrotas. O último valor é o teto. |
+| `killBonusByCategory` | Bônus por abate conforme a categoria da arma usada. |
+| `killBonusDefault` | Bônus por abate quando a arma não está em nenhuma categoria. |
+| `bombPlantBonusTeam` | Bônus pago ao time atacante quando a bomba é plantada e o round é perdido. |
+| `bombDefuseBonus` | Bônus extra para quem desarma a bomba. |
+| `assistBonus` | Bônus para quem causou dano na vítima antes do abate. |
+
+<Tip>
+  As categorias usadas em `killBonusByCategory` são as mesmas de `globalConfig.weaponCategories`. Ao adicionar uma arma nova, associe uma categoria para que o bônus correto seja aplicado.
+</Tip>
+
+---
+
+## Loja de armamentos
+
+Duas tabelas definem a loja do modo economia: os nomes das categorias e a lista de itens.
+
+<AccordionGroup>
+  <Accordion title="Nomes das categorias" icon="tags">
+    A chave precisa ser a mesma usada em `category` nos itens.
+
+    ```lua
+    globalConfig.shopCategoryLabels = {
+        equipment = "Equipamento",
+        pistols   = "Pistolas",
+        smgs      = "Submetralhadoras",
+        rifles    = "Fuzis",
+        grenades  = "Granadas",
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Itens à venda" icon="cart-shopping">
+    Cada item aceita os campos abaixo. Somente os itens de equipamento usam `armor` ou `defuseKit`.
+
+    ```lua
+    globalConfig.shopItems = {
+        { id = "armor_full", name = "Colete Full",    category = "equipment", price = 650,  armor = 100 },
+        { id = "defuse_kit", name = "Kit de Desarme", category = "equipment", price = 400,  defuseKit = true },
+        { id = "pistol",     name = "FIVE",           category = "pistols",   price = 500,  weapon = "WEAPON_PISTOL_MK2", weaponName = "weapon_pistol_mk2" },
+        { id = "grenade",    name = "Granada",        category = "grenades",  price = 300,  weapon = "WEAPON_GRENADE" },
+    }
+    ```
+
+    | Campo | Descrição |
+    | --- | --- |
+    | `id` | Identificador único do item dentro da categoria. |
+    | `name` | Nome exibido na loja. |
+    | `category` | Categoria do item. Precisa existir em `shopCategoryLabels`. |
+    | `price` | Preço em dinheiro da partida. |
+    | `weapon` | Arma entregue na compra. Omitir em itens que não são armas. |
+    | `weaponName` | Nome do modelo, usado para exibição e para a skin. |
+    | `armor` | Quantidade de colete entregue (só em equipamento). |
+    | `defuseKit` | `true` marca o item como kit de desarme. |
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  Comprar uma arma da mesma categoria de outra que o jogador já tem substitui a antiga, e a arma trocada cai no chão. O kit de desarme só aparece na loja dos defensores.
+</Info>
+
+---
+
+## Categorias e props das armas
+
+Duas tabelas de apoio usadas pelo bônus de abate, pela hotbar e pelo drop de armas.
+
+<AccordionGroup>
+  <Accordion title="Categoria de cada arma" icon="list">
+    Define a categoria de cada arma. Além do bônus de abate, é o que organiza a hotbar do jogador.
+
+    ```lua
+    globalConfig.weaponCategories = {
+        WEAPON_KNIFE        = "knife",
+        WEAPON_PISTOL_MK2   = "pistols",
+        WEAPON_ASSAULTSMG   = "smgs",
+        WEAPON_CARBINERIFLE = "rifles",
+        WEAPON_SNIPERRIFLE  = "snipers",
+        WEAPON_GRENADE      = "grenades",
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Prop de cada arma" icon="box">
+    Modelo usado quando a arma é largada no chão no modo economia. Armas sem prop não geram drop.
+
+    ```lua
+    globalConfig.weaponProps = {
+        WEAPON_PISTOL_MK2   = "w_pi_pistolmk2",
+        WEAPON_ASSAULTSMG   = "w_sb_assaultsmg",
+        WEAPON_CARBINERIFLE = "w_ar_carbinerifle",
+        WEAPON_SNIPERRIFLE  = "w_sr_sniperrifle",
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Modos de armas
+
+Definem o loadout das partidas **sem** economia. Há três tabelas envolvidas.
+
+<AccordionGroup>
+  <Accordion title="Modos disponíveis" icon="list">
+    Cada chave é o texto exibido no tablet e na votação do duelo; o valor é a referência interna do conjunto.
+
+    ```lua
+    globalConfig.weaponModes = {
+        ["Apenas Pistolas"] = "Pistolas",
+        ["Apenas Fuzil"]    = "Fuzil",
+        ["Apenas Subs"]     = "Subs",
+        ["Misto"]           = "Misto",
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Armas de cada conjunto" icon="gun">
+    Lista de armas entregues por conjunto. A faca é sempre entregue, além das armas listadas.
+
+    ```lua
+    globalConfig.weaponsForModes = {
+        ["Pistolas"] = { "WEAPON_PISTOL_MK2" },
+        ["Fuzil"]    = { "WEAPON_SPECIALCARBINE_MK2" },
+        ["Subs"]     = { "WEAPON_ASSAULTSMG" },
+        ["Misto"]    = { "WEAPON_SPECIALCARBINE_MK2", "WEAPON_ASSAULTSMG", "WEAPON_PISTOL_MK2" },
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Sequência do modo Misto" icon="arrow-right">
+    No modo Misto a partida é dividida em fases conforme o total de rounds. Cada fase usa um conjunto, na ordem definida abaixo.
+
+    ```lua
+    globalConfig.mixedModeSequence = {
+        "Pistolas",
+        "Subs",
+        "Fuzil",
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Mapas
+
+A lista `globalConfig.maps` define quais mapas aparecem na criação da partida e na votação do duelo. Cada mapa precisa ter uma entrada correspondente em `globalConfig.mapsData`.
+
+```lua
+globalConfig.maps = {
+    "Mirage Exclusive",
+    "Dust 1.6",
+    "Dust Go",
+    -- demais mapas...
+}
+```
+
+Cada entrada de `mapsData` define os pontos de nascimento, o tempo de round, a imagem do tablet e — opcionalmente — os modos aceitos e os sites de bomba.
+
+```lua
+globalConfig.mapsData = {
+    ["Mirage Exclusive"] = {
+        attackerTeamSpawn = vec3(-2613.64, -2718.96, 457.89),
+        defenderTeamSpawn = vec3(-2719.95, -2708.05, 453.97),
+        roundDuration     = 180,
+        roundCountdown    = 3,
+        image             = "arenas/mirage.png",
+        bombs             = {
+            ["A"] = { coords = vec3(-2688.54, -2743.06, 457.56), radius = 6.0 },
+            ["B"] = { coords = vec3(-2684.37, -2653.52, 457.56), radius = 6.0 },
+        },
+    },
+
+    ["Pool"] = {
+        attackerTeamSpawn = vec3(-4106.18, 952.25, 8.51),
+        defenderTeamSpawn = vec3(-4105.08, 976.9, 8.51),
+        roundDuration     = 180,
+        roundCountdown    = 3,
+        modes             = { "arena" },
+        image             = "arenas/pool.png",
+    },
+}
+```
+
+| Campo | Descrição |
+| --- | --- |
+| `attackerTeamSpawn` | Nascimento do time atacante (equipe azul na arena). |
+| `defenderTeamSpawn` | Nascimento do time defensor (equipe branca na arena). |
+| `roundDuration` | Duração de cada round em segundos. |
+| `roundCountdown` | Contagem regressiva antes do round liberar o movimento. |
+| `image` | Caminho da imagem do mapa exibida no tablet, dentro de `web/`. |
+| `modes` | Lista de modos aceitos pelo mapa. Omitir libera os dois modos. |
+| `bombs` | Sites de plante do Plante/Desarme. Opcional. |
+
+<Accordion title="Sites de bomba (Plante/Desarme)" icon="bomb">
+  Cada site recebe uma coordenada central e um raio de plante. É possível ter dois ou três sites.
+
+  ```lua
+  bombs = {
+      ["A"] = { coords = vec3(x, y, z), radius = 6.0 },
+      ["B"] = { coords = vec3(x, y, z), radius = 6.0 },
+      ["C"] = { coords = vec3(x, y, z), radius = 6.0 }, -- terceiro site opcional
+  }
+  ```
+
+  | Campo | Descrição |
+  | --- | --- |
+  | `coords` | Centro do site. A C4 é plantada na posição exata do jogador. |
+  | `radius` | Raio em que o jogador pode plantar a partir do centro. |
+</Accordion>
+
+<Warning>
+  Um mapa sem a tabela `bombs` nunca aparece na lista do Plante/Desarme, mesmo que `modes` inclua esse modo. Para os mapas exclusivos de arena, use `modes = { "arena" }`.
+</Warning>
+
+<Tip>
+  Para adicionar um mapa novo, inclua o nome na lista `maps` e crie a entrada correspondente em `mapsData`. Os dois precisam combinar exatamente.
+</Tip>

@@ -1,0 +1,148 @@
+---
+title: "races"
+description: "Corridas de rua com múltiplos modos, checkpoints, ranking global por tempo, recompensas com experiência e loja/aluguel de veículos exclusivos. Aberta via item `racestablet`."
+---
+
+O **races** traz corridas de rua com rotas de checkpoints sequenciais (blips numerados \+ props no mundo). Durante a corrida, jogador e veículo entram em modo "fantasma". A NUI exibe posição, corredores, cronômetro e checkpoint. Ao concluir, o jogador recebe recompensa em `platinum`, experiência `Race` e seu melhor tempo é gravado na tabela `races` (coluna `Points` em ms, menor é melhor).
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Três Modos de Corrida" icon="flag-checkered">
+    Corrida Terminal, Pista Fantasma e Duelo de Traçado, cada um com regras próprias de largada, competição e explosão.
+  </Card>
+
+  <Card title="Checkpoints Sequenciais" icon="route">
+    Rotas com blips numerados e props físicos (pneus e bandeiras) marcando cada checkpoint no mundo.
+  </Card>
+
+  <Card title="Ranking Global por Tempo" icon="ranking-star">
+    Melhores tempos gravados por modo e rota, com ranking individual e global ordenado pelo menor tempo.
+  </Card>
+
+  <Card title="Recompensa com Experiência" icon="gem">
+    Pagamento em `platinum` com bônus por nível `Race`, buff `Dexterity` e multiplicadores VIP.
+  </Card>
+
+  <Card title="Loja de Exclusivos" icon="car-side">
+    Loja e aluguel de veículos da categoria "Exclusivos" diretamente pela NUI das corridas.
+  </Card>
+
+  <Card title="Modo Fantasma" icon="ghost">
+    Jogador e veículo entram em modo fantasma durante a corrida, evitando colisões com terceiros.
+  </Card>
+</CardGroup>
+
+### Modos disponíveis (tabela `Races`)
+
+| Modo | Flags | Descrição |
+| --- | --- | --- |
+| **Corrida Terminal** | `Global` \+ `Explode` | Competitiva; se o tempo do checkpoint zerar, o veículo explode (ou dano ao ped). |
+| **Pista Fantasma** | `!Global` \+ `!Explode` | Treino individual, sem largada/contagem. |
+| **Duelo de Traçado** | `Global` \+ `!Explode` | Competitiva com grade e contagem, sem explosão. |
+
+Nos modos globais, pressionar **E** chama `vSERVER.GlobalState`, que dispara `races:Start` para todos, posiciona a grade e roda a contagem (`SecondsInit`).
+
+---
+
+## Dependências
+
+<CardGroup cols={3}>
+</CardGroup>
+
+<Info>
+  Itens (`vrp/config/Item.lua`): `racestablet` (abre a UI), `racesticket` (consumido por largada), `platinum` (moeda).
+</Info>
+
+---
+
+## Configuração
+
+Configurações em `shared-side/shared.lua`.
+
+<AccordionGroup>
+  <Accordion title="Variáveis gerais" icon="sliders">
+    | Variável | Padrão | Descrição |
+    | --- | --- | --- |
+    | `SecondsInit` | `3` | Contagem regressiva de largada. |
+    | `RankingTablet` | `10` | Limite de registros no ranking. |
+    | `SecondsResult` | `5000` | Tempo (ms) da tela de resultados. |
+    | `CooldownRaces` | `7200` | Cooldown por jogador/modo/rota. |
+    | `SecondsExplode` | `5000` | Atraso (ms) até explodir após o tempo esgotar. |
+    | `ExchangeItem` | `"platinum"` | Item de recompensa/moeda da loja. |
+    | `ColourMarker` | `77` | Cor dos blips. |
+    | `PropTyre` / `PropFlags` | pneu / bandeira | Props dos checkpoints. |
+  </Accordion>
+
+  <Accordion title="Rotas (Routes)" icon="route">
+    Cada rota tem `Time`, `Runners`, `Payment`, `Difficulty`, `Image`, `Name`, `Init` (vec3), `Positions` (grade, vec4) e `Coords` (checkpoints com `Left`/`Center`/`Right`/`Distance`).
+  </Accordion>
+
+  <Accordion title="Modos (Races)" icon="flag-checkered">
+    `Global`, `Explode`, `Icon`, `Name`, `Description`, `Routes`.
+  </Accordion>
+
+  <Accordion title="Recompensa (Core.Finish)" icon="gem">
+    Base aleatória 75–125% de `Payment`, \+2,5%/nível `Race`, \+10% buff `Dexterity`, serviços VIP (`Ouro` \+10%, `Prata` \+7,5%, `Bronze` \+5%). A loja lista a categoria de veículos `"Exclusivos"`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Este recurso não registra comandos. A UI abre pelo item `racestablet` (evento `races:Open`).
+
+---
+
+## Eventos
+
+A interface `races` é exposta com `Tunnel.bindInterface` em ambos os realms (servidor e cliente).
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+| --- | --- |
+| `Disconnect` | Limpeza de estado do jogador ao sair (core). |
+
+### Cliente
+
+| Evento | Descrição |
+| --- | --- |
+| `races:Open` | Abre a NUI das corridas (via item `racestablet`). |
+| `races:Start` | Inicia a corrida (modos e selecionados), largada/contagem. |
+| `races:Notify` | Exibe uma notificação da corrida na NUI. |
+
+### NUI Callbacks
+
+| Callback | Descrição |
+| --- | --- |
+| `Close` | Fecha a NUI. |
+| `Run` | Inicia/seleciona a corrida escolhida. |
+| `Ranking` | Retorna o ranking da rota. |
+| `RankingGlobal` | Retorna o ranking global por tempo. |
+| `Vehicles` | Lista os veículos da loja (categoria "Exclusivos"). |
+| `RentalVehicle` | Aluga um veículo exclusivo. |
+
+---
+
+## Banco de Dados
+
+A tabela `races` guarda uma linha por melhor tempo.
+
+| Coluna | Descrição |
+| --- | --- |
+| `Mode`, `Race`, `Passport`, `Vehicle`, `Points` | Identificação do tempo, com `UNIQUE (Mode,Race,Passport)`. |
+
+<Note>
+  INSERT na 1ª conclusão, UPDATE quando o tempo melhora. O aluguel também atualiza `five_characters_vehicles`.
+</Note>
+
+---
+
+## Customização
+
+- **Circuitos:** tabela `Routes` (`Init`, `Positions`, `Coords`); imagens em `web-side/images/routes/`.
+- **Modos:** tabela `Races`; ícones em `web-side/images/modes/`.
+- **Recompensa/progressão:** `Payment` por rota \+ multiplicadores em `Core.Finish`.
+- **Equilíbrio:** `CooldownRaces`, `Runners`, `SecondsInit`, `Time`, `SecondsExplode`.

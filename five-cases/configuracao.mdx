@@ -1,0 +1,133 @@
+---
+title: "Configuração"
+description: "Todos os ajustes do Five Cases: comandos, raridades, catálogo de skins, celular e inspeção 3D."
+---
+
+A configuração fica inteira em `config/config.lua`, na tabela `Cases`.
+
+---
+
+## Ajustes gerais
+
+```lua
+Cases.System = {
+    Identifier = 'five-cases',       -- nome do resource, usado nos eventos internos
+    AppName = 'Five Cases',
+
+    Command = 'cases',               -- comando que abre o painel
+    KeybindDescription = 'Abrir Cases',
+
+    PurchaseCooldown = 1500,         -- intervalo mínimo entre compras (ms)
+    EquipCooldown = 500,             -- intervalo mínimo entre equipar/desequipar (ms)
+}
+
+Cases.WebhookKey = 'caseOpened'      -- categoria de log usada em Functions.Log a cada compra
+```
+
+<Note>
+  Se você renomear a pasta do resource, atualize `Cases.System.Identifier` para o mesmo nome — ele é usado para montar o evento interno de sincronização do celular.
+</Note>
+
+<Note>
+  `Cases.WebhookKey` é só o nome da categoria. O link do webhook em si fica em `config/webhooks.lua` — veja [Log de compras](/five-cases/instalacao#log-de-compras).
+</Note>
+
+---
+
+## Raridades
+
+```lua
+Cases.Rarities = {
+    comum    = { Label = 'Comum',    Price = 250,  Color = '#8696A0' },
+    raro     = { Label = 'Raro',     Price = 600,  Color = '#53BDEB' },
+    epico    = { Label = 'Epico',    Price = 1500, Color = '#B084F5' },
+    lendario = { Label = 'Lendario', Price = 4000, Color = '#F5B942' },
+}
+```
+
+<Note>
+  O preço de uma skin vem sempre da raridade dela, e não é definido item a item.
+</Note>
+
+---
+
+## Catálogo de skins
+
+Cada skin referencia um modelo (`Id`) que precisa existir como stream (`.ydr`/`.ytyp`, e `.ytd` quando a textura não vem embutida) e uma imagem em `web/dist/cases/` (basta colocar o arquivo ali, sem precisar rebuildar nada).
+
+```lua
+Cases.Catalog = {
+    { Id = 'ipbrown', Name = 'Bear Marrom', Collection = 'Bear', Rarity = 'comum', Image = 'cases/ipbrown.png', Color = '#8B5A2B' },
+    -- ...
+}
+```
+
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `Id` | `string` | Nome do modelo customizado (arquivo em `stream/`) |
+| `Name` | `string` | Nome exibido no painel |
+| `Collection` | `string` | Agrupa as skins na interface |
+| `Rarity` | `string` | Chave correspondente em `Cases.Rarities` |
+| `Image` | `string` | Caminho da imagem, relativo a `web/dist` |
+| `Color` | `string` | Cor real do prop (hex). Usada só na moldura da tela do celular quando a skin é equipada — não tem relação com a cor da raridade |
+
+---
+
+## Celular
+
+<Note>
+  `ExportResource` define qual recurso recebe as chamadas de troca de skin. Veja [Integração com o celular](/five-cases/instalacao#integração-com-o-celular) pra adaptar pra um celular diferente do lb-phone.
+</Note>
+
+<Note>
+  Com `RegisterApp = true`, o Five Cases aparece como um app na tela inicial do celular (via `AddCustomApp` do lb-phone) — o jogador abre pelo ícone, sem precisar do comando `/cases`. Deixe `false` pra manter só o comando/atalho de teclado.
+</Note>
+
+```lua
+Cases.Phone = {
+    ExportResource = 'lb-phone',                            -- resource do celular que recebe SetCasePhoneSkin
+
+    RegisterApp = true,                                     -- registra o Five Cases como app na tela inicial do celular
+    AppIcon = 'nui://five-cases/web/dist/app-icon.svg',
+    AppDescription = 'Compre e equipe skins pro seu celular',
+
+    DefaultModel = 'prop_amb_phone',                       -- modelo sem skin equipada
+    DefaultOffset = { x = 0.0, y = -0.005, z = 0.0 },
+    DefaultRotation = { x = 0.0, y = 0.0, z = 0.0 },
+
+    ClipAnimName = 'idle_a',                                -- clipe tocado no objeto ao equipar uma skin
+
+    Preview = {
+        RotationSpeed = 0.7,                                -- graus por frame na prévia
+        Fov = 22.0,
+        CamOffset = { forward = 0.28, right = 0.03, up = 0.02 },
+    },
+
+    PropOverrides = {
+        bunnywish = { Offset = { x = 0.012, y = 0.003, z = -0.045 } },
+    },
+}
+```
+
+<Note>
+  Use `PropOverrides` quando uma skin específica precisa de um offset ou rotação diferente do padrão, por causa do tamanho ou formato do modelo. A animação idle de cada skin é resolvida automaticamente como `clip@<Id>`, então o arquivo em `stream/` precisa seguir esse nome.
+</Note>
+
+---
+
+## Inspeção 3D
+
+```lua
+Cases.Inspect = {
+    Fov = 24.0,
+    SpawnOffset = { forward = 1.2, up = 0.55 },  -- posição do objeto à frente do personagem
+
+    DefaultZoom = 0.75,
+    MinZoom = 0.35,
+    MaxZoom = 1.5,
+    ZoomStep = 0.06,                              -- variação por scroll do mouse
+
+    RotationSensitivity = 400.0,                  -- sensibilidade do arraste do mouse
+    LerpSpeed = 0.15,                              -- suavização da rotação
+}
+```

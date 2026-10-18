@@ -1,0 +1,126 @@
+---
+title: "boosting"
+description: "Roubo e entrega de veículos (car boosting). O jogador aceita contratos pagando em platinum, furta o veículo no mapa e o entrega via desmonte (circuit) para receber dinheiro, itens e experiência."
+---
+
+O **boosting** é o sistema de roubo e entrega de veículos (car boosting). O jogador aceita contratos pagando em platinum, furta o veículo no mapa e o entrega via desmonte (`circuit`) para receber dinheiro, itens e experiência.
+
+Os contratos são divididos em **6 tiers (classes)**, liberados conforme a experiência `Boosting`.
+
+---
+
+## Como funciona
+
+<Steps>
+  <Step title="Geração">
+    Thread no servidor (60s) sorteia contratos por tier (limitado ao nível do jogador). Máx. 3 pendentes por jogador; tier 6 é globalmente limitado. Cada tier tem cooldown próprio.
+  </Step>
+  <Step title="Aceite">
+    Pela NUI (`Core.Accept`), cobra o item `platinum` no valor `Value` e ativa a missão (timer `3600s`).
+  </Step>
+  <Step title="Furto">
+    O cliente recebe `boosting:Active`, sorteia um local de `Locates` e envia waypoint; ao chegar (≤50m), `Core.CreateVehicle` spawna o veículo, gera placa e registra via `inventory:Boosting`.
+  </Step>
+  <Step title="Entrega">
+    O item `circuit` é usado dentro do veículo roubado para subir o progresso até **10**; ao concluir, o inventory chama `exports.boosting:Payment` e `:Remove`.
+  </Step>
+  <Step title="Dispatch">
+    Ações no veículo disparam `boosting:Dispatch`, que spawna NPCs hostis armados.
+  </Step>
+</Steps>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="gears">
+    Core do framework e API base.
+  </Card>
+
+  <Card title="PolyZone" icon="map-pin">
+    Suporte a zonas.
+  </Card>
+
+  <Card title="inventory" icon="box">
+    `GeneratePlate`, `inventory:Boosting`, item `circuit`.
+  </Card>
+
+  <Card title="party" icon="users">
+    `Room`, recompensa em grupo.
+  </Card>
+
+  <Card title="markers" icon="location-dot">
+    `Enter` / `Exit`.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+Inline em `server-side/core.lua` (sem pasta `config/`):
+
+- **`Contracts[1..6]`**: veículos por classe com `Vehicle`, `Timer` (3600), `Value` (custo em platinum), `Class`, `Exp`.
+- **`Minimals[1..6]`**: recompensa por classe: faixa `Min`/`Max` e `Item` (essência: `blue/purple/green/red/pink_essence`).
+- **`Levels = {0,1000,2000,3500,5000,7500}`**: XP para desbloquear cada classe.
+- **Pagamento** (`Payment`): `Value * 3` em platinum \+ 1 essência \+ `Exp`. Em grupo (`party:Room`, ≥2 membros em 25m) distribui a todos.
+- **`Locates`** (cliente): ~50 `vec4` de spawn. **`Peds`/`Weapons`** (cliente): NPCs do dispatch.
+
+---
+
+## Exports
+
+| Export | Descrição |
+| --- | --- |
+| `exports.boosting:Payment(source, Passport)` | Paga as recompensas (chamado pelo inventory ao concluir 10/10). |
+| `exports.boosting:Remove(Passport, Plate)` | Encerra a missão e aplica cooldown. |
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+Servidor expõe a interface `boosting` (`Tunnel.bindInterface`) consumida pela NUI/cliente.
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+| --- | --- |
+| `Connect` | Ao conectar, inicializa pendentes/cooldowns do jogador em memória. |
+
+### Cliente
+
+| Evento | Descrição |
+| --- | --- |
+| `boosting:Open` | Abre a NUI de contratos de boosting. |
+| `boosting:Active(VehicleModel,Class)` | Inicia a missão: sorteia local em `Locates`, define waypoint e prepara o spawn do veículo. |
+| `boosting:Reset` | Encerra/reseta a missão ativa no cliente. |
+| `boosting:Dispatch` | Spawna NPCs hostis armados (resistência) em resposta a ações no veículo. |
+
+### NUI Callbacks
+
+| Callback | Descrição |
+| --- | --- |
+| `Close` | Fecha a NUI. |
+| `Active` | Consulta/atualiza o contrato ativo. |
+| `Pending` | Lista os contratos pendentes. |
+| `Accept` | Aceita um contrato (cobra `platinum` e ativa a missão). |
+| `Scratch` | Descarta/recusa um contrato sorteado. |
+| `Decline` | Recusa um contrato pendente. |
+| `Transfer` | Transfere/repassa um contrato. |
+
+---
+
+## Customização
+
+- **`Contracts`**: veículos, custo, timer e XP por classe.
+- **`Minimals`**: recompensas e cooldowns.
+- **`Levels`**: XP exigido por classe.
+- **`Locates`**: onde os veículos aparecem.
+- **`Peds`/`Weapons`** \+ handler `boosting:Dispatch`: resistência policial.
+
+<Note>
+  Sem persistência própria: pendentes, ativos e cooldowns ficam em memória (`Pendings`, `Active`, `Cooldowns`); só XP e itens vão pro vRP.
+</Note>

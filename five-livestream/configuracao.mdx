@@ -1,0 +1,144 @@
+---
+title: "Configuração"
+description: "Todos os ajustes do Five Livestream: API central de login, detecção de live, painel, comandos e textos."
+---
+
+A configuração fica em `config/`, dividida em três arquivos por escopo: `server/general.lua` (só o servidor vê, tem a chave da API central), `client/general.lua` (aparência do painel) e `shared/language.lua` (textos).
+
+---
+
+## config/server/general.lua
+
+<AccordionGroup>
+  <Accordion title="API central de login e streams" icon="key">
+    ```lua
+    -- URL pública da API central de login
+    LIVESTREAM_API_URL = 'https://auth.fivenetwork.dev',
+
+    -- Chave desse servidor especificamente na API central (uma por instalação)
+    LIVESTREAM_API_KEY = 'csk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    ```
+
+    <Warning>
+      `LIVESTREAM_API_KEY` é a identidade deste servidor junto à API central. Nunca reaproveite a mesma chave em duas instalações diferentes.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Permissão de admin" icon="user-shield">
+    ```lua
+    -- Nome da permissão/grupo do vRP que libera o painel e os comandos de admin
+    ADMIN_PERMISSION = 'Admin',
+    ```
+  </Accordion>
+
+  <Accordion title="Regras de detecção de live" icon="satellite-dish">
+    ```lua
+    REQUIRED_TITLE_TAG = 'minhacidade',        -- tag obrigatória no título da live
+    REQUIRED_GAME_ID = '32982',                 -- ID do jogo "GTA V" na Twitch
+    KICK_REQUIRED_CATEGORY_NAME = 'Grand Theft Auto V', -- trecho do nome da categoria na Kick (comparação por substring)
+    ```
+
+    <Tip>
+      A Kick expõe a categoria como algo do tipo `"Grand Theft Auto V (GTA)"`. Deixe só o trecho estável em `KICK_REQUIRED_CATEGORY_NAME`; a checagem usa "contém", não "igual exato".
+    </Tip>
+  </Accordion>
+
+  <Accordion title="YouTube (opcional)" icon="youtube">
+    Sem relação com o login: usada só para checar "quem está ao vivo agora" no YouTube.
+
+    ```lua
+    -- API Key do Google Cloud Console com "YouTube Data API v3" habilitada
+    -- (console.cloud.google.com -> Credenciais -> Criar credenciais -> Chave de API)
+    YOUTUBE_API_KEY = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+
+    -- Intervalo entre verificações do YouTube, em ms (bem mais espaçado por causa da cota gratuita)
+    YOUTUBE_CHECK_INTERVAL_MS = 1800000, -- 30 minutos
+    ```
+
+    <Info>
+      Sem essa chave, a checagem do YouTube simplesmente não roda. O resto do script continua funcionando normalmente (o login/vínculo de canal do YouTube não depende dela, só a detecção automática de live).
+    </Info>
+  </Accordion>
+
+  <Accordion title="Intervalo de checagem (Twitch/Kick)" icon="clock">
+    ```lua
+    CHECK_INTERVAL_MS = 60000, -- 1 minuto
+    ```
+
+    <Tip>
+      Esse valor também é o tanto de tempo creditado a cada checagem que bate: checar a cada 1 minuto credita 1 minuto. Aumentar o intervalo (ex: `300000` para 5 minutos) reduz a frequência de chamadas à API central sem distorcer o total, só faz o placar reagir mais devagar.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## config/client/general.lua
+
+<AccordionGroup>
+  <Accordion title="Aparência" icon="palette">
+    ```lua
+    -- Logo da cidade exibida no painel
+    LOGO_URL = 'https://cdn.fivenetwork.dev/.../logo.png',
+
+    -- Cor de destaque (accent) do painel, em hex - a interface deriva sozinha os tons
+    -- mais escuro/claro a partir desse valor
+    THEME_COLOR = '#0143bb',
+    ```
+  </Accordion>
+
+  <Accordion title="Catálogo de itens e veículos (URLs de reserva)" icon="images">
+    Usadas só como **reserva** no seletor visual de recompensa do admin. A fonte principal de itens é a própria pasta `config/inventory/` do resource `vrp` (servida via NUI dele, sem precisar de internet); veículos não têm fonte local equivalente, então dependem só dessa URL.
+
+    ```lua
+    ITEMS_BASE_URL = 'https://cdn.fivenetwork.dev/itens/',
+    VEHICLES_BASE_URL = 'https://cdn.fivenetwork.dev/veiculos/',
+    ```
+
+    <Note>
+      Se um item não tiver arquivo em `config/inventory/` do vRP **e** também não tiver imagem em `ITEMS_BASE_URL`, o seletor mostra um ícone genérico. Nunca quebra.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## config/shared/language.lua
+
+Todas as mensagens exibidas ao jogador/admin ficam num mapa `chave = "texto"`. Traduza só o valor à direita; alguns textos usam placeholders (`{player}`, `{platform}`) substituídos em tempo de execução.
+
+```lua
+["Admin.AccessDenied"] = "Acesso negado ao painel de administração.",
+["Player.Goal.Redeem.Success"] = "Meta resgatada com sucesso!",
+["Admin.DeleteChannel.Success"] = "Canal do jogador {player} na plataforma {platform} removido com sucesso.",
+```
+
+---
+
+## Comandos
+
+| Comando | Quem usa | O que faz |
+| --- | --- | --- |
+| `/painel` | Jogador | Abre o painel completo do criador (metas, ranking, canais, lives) |
+| `/live` | Jogador | Abre um painel separado, só com quem está ao vivo na cidade agora |
+| `/liveadm` | Admin | Abre o painel administrativo diretamente |
+
+<Info>
+  O painel administrativo cobre toda a gestão do dia a dia (temporada, metas, ranking, canais vinculados, tempo de jogadores) por interface visual. Não existem subcomandos de chat para essas ações — nem para vincular conta, que é sempre feito pelo botão "Vincular" no painel (login OAuth) ou, manualmente pelo admin, na aba "Canais vinculados".
+</Info>
+
+---
+
+## Painel administrativo
+
+O `/liveadm` abre cinco abas:
+
+| Aba | O que gerencia |
+| --- | --- |
+| **Temporada** | Data de encerramento da temporada atual |
+| **Metas e recompensas** | Metas de horas acumuladas e as recompensas que cada uma entrega |
+| **Ranking e prêmios** | Premiação por posição no ranking de tempo transmitido |
+| **Canais vinculados** | Lista de todos os canais vinculados por todos os jogadores, com remoção |
+| **Gerenciar tempo** | Adicionar/remover horas de um jogador, por um seletor de jogadores online (sem precisar adivinhar ID) |
+
+Ao criar uma meta ou uma posição de ranking, o tipo de recompensa (`Gemas`, `Item`, `Veículo`, `Grupo/VIP`, `Caixa`) decide o restante do formulário (veja os tipos em [Sistema de recompensas](/five-livestream/apresentacao#sistema-de-recompensas)). Para `Item` e `Veículo`, o formulário abre um catálogo visual (foto, nome, busca e paginação) que lê o catálogo de verdade do servidor, com seleção múltipla. Para `Caixa`, escolhe a raridade numa lista com a arte de cada caixa.

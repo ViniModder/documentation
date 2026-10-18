@@ -1,0 +1,103 @@
+---
+title: "pages"
+description: "Sistema administrativo de páginas interativas no mundo: pontos com ox_target que, ao serem acionados, abrem uma imagem/página (via URL) em tela cheia na NUI."
+---
+
+O **pages** permite que administradores criem "páginas" em coordenadas do mapa. Cada uma gera uma zona esférica (`ox_target`) onde jogadores próximos recebem a opção **Abrir** (exibe a imagem/link em tela cheia); admins também recebem **Deletar**. As páginas respeitam o _routing bucket_ (`Route`) e só aparecem para quem está a até 10m (verificação a cada 1s). Cada página tem código `DDLLDDLL`.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Páginas no mundo" icon="map-pin">
+    Crie pontos interativos em qualquer coordenada do mapa, cada um com sua própria zona de detecção.
+  </Card>
+
+  <Card title="Exibição em tela cheia" icon="image">
+    Ao acionar uma página, a imagem ou link é exibido em tela cheia na NUI.
+  </Card>
+
+  <Card title="Interação por ox_target" icon="hand-pointer">
+    Cada página gera uma zona esférica com a opção **Abrir** para jogadores e **Deletar** para admins.
+  </Card>
+
+  <Card title="Respeita routing bucket" icon="layer-group">
+    As páginas obedecem ao `Route`, aparecendo apenas para quem está no mesmo bucket e a até 10m.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vRP" icon="cube">
+    `HasGroup`, `Query` em `entitydata`.
+  </Card>
+
+  <Card title="ox_target" icon="bullseye">
+    Zonas esféricas de interação.
+  </Card>
+
+  <Card title="keyboard" icon="keyboard">
+    `vKEYBOARD.Tertiary`.
+  </Card>
+
+  <Card title="hud" icon="gauge">
+    `hud:Active`.
+  </Card>
+</CardGroup>
+
+<Info>
+  **core\_logs** é opcional — usado para registrar a criação de páginas.
+</Info>
+
+---
+
+## Comandos
+
+| Comando | Permissão | Descrição |
+| --- | --- | --- |
+| `/pages` | Admin nível 1 | Abre teclado de 3 campos: **Coords** (`x,y,z`), **Distância** (raio), **Link** (URL). Cria, sincroniza e (se houver) registra no `five_logs`. |
+
+---
+
+## Eventos
+
+A tabela abaixo lista todos os eventos do script, separados por lado.
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| `pages:Delete` | Servidor | Remove a página selecionada (Admin nível 1) e propaga a remoção. |
+| `Connect` | Servidor | Ao conectar, envia a lista de páginas ao jogador (`pages:Table`). |
+| `SaveServer` | Servidor | Persiste as páginas em `entitydata`. |
+| `pages:New` | Cliente | Registra uma nova página e cria a interação `ox_target`. |
+| `pages:Remove` | Cliente | Remove a página/interação correspondente. |
+| `pages:Table` | Cliente | Recebe e recria toda a lista de páginas. |
+| `pages:Send` | Cliente | Abre a NUI exibindo a imagem/link em tela cheia. |
+| `pages:Item` | Cliente | Abre a NUI a partir de um link direto. |
+| `Close` | NUI | Fecha a NUI e libera o foco. |
+
+---
+
+## Banco de Dados
+
+Sem tabela própria, usa `entitydata` sob `Name = "Pages"` (JSON no `Information`). Cada entrada guarda os campos abaixo.
+
+| Campo | Descrição |
+| --- | --- |
+| `Image` | Link da imagem/página exibida. |
+| `Coords` | Coordenadas da página no mundo. |
+| `Distance` | Raio da interação. |
+| `Route` | Routing bucket da página. |
+
+---
+
+## Customização
+
+- **Distância de detecção:** `#(Coords - OtherCoords) <= 10` (`client-side/core.lua`); o raio da interação é a `Distance` informada.
+- **Permissão:** Admin nível 1 (criação/exclusão).
+- **Aparência:** tela cheia com `object-contain` em `web-side/style.css`.
+
+<Tip>
+  Ajuste o `object-contain` em `web-side/style.css` para controlar como a imagem se encaixa na tela.
+</Tip>

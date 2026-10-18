@@ -1,0 +1,286 @@
+---
+title: "Instalação"
+description: "Passo a passo para instalar, licenciar e adaptar o Five Game no seu servidor FiveM."
+---
+
+## Dependências
+
+Inicie todas as dependências **antes** do Five Game.
+
+<CardGroup cols={2}>
+  <Card title="vRP" icon="puzzle-piece">
+    O recurso carrega `@vrp/lib/utils.lua` e usa o framework para identidade, saldo e permissões. Toda a integração fica isolada em um único arquivo.
+  </Card>
+
+  <Card title="oxmysql" icon="database">
+    Guarda o perfil e o ranking dos jogadores. A tabela é criada sozinha na primeira inicialização.
+  </Card>
+
+  <Card title="xsound" icon="volume-high">
+    Responsável pelos sons posicionais da partida, como os efeitos da C4 no Plante/Desarme.
+  </Card>
+
+  <Card title="pma-voice" icon="microphone">
+    Coloca cada time em um canal de rádio próprio durante a partida. Adaptável em `client/class/adapter.lua`.
+  </Card>
+</CardGroup>
+
+<Info>
+  Dois recursos são detectados automaticamente e usados apenas se estiverem rodando: **five-skins**, que aplica a skin equipada nas armas da partida, e **PL_PROTECT**, que registra as armas entregues no anticheat. Sem eles, o Five Game segue o fluxo padrão.
+</Info>
+
+---
+
+## Instalação do recurso
+
+<Steps>
+  <Step title="Copie a pasta do recurso">
+    O pacote vem com a pasta `[five_game]`, contendo `five-game` e o `xsound`. Coloque-a dentro do diretório de recursos do seu servidor (por exemplo `resources/`).
+
+    A pasta `five-game/stream` traz os mapas das arenas e o modelo da granada de fumaça. Mantenha-a junto do recurso.
+  </Step>
+
+  <Step title="Informe o token de licença">
+    Abra o arquivo `token.lua` na raiz do recurso e substitua o valor pelo token recebido na compra.
+
+    ```lua token.lua
+    exports('license', function ()
+        return 'SEU-TOKEN-AQUI'
+    end)
+    ```
+  </Step>
+
+  <Step title="Configure o recurso">
+    Edite `shared/config.lua` conforme a página de [Configuração](/five-game/configuracao). É onde ficam comando, teclas, mapas, modos de armas, economia, loja, duelo e apostas.
+  </Step>
+
+  <Step title="Adicione à server.cfg">
+    Garanta que o Five Game seja iniciado depois das dependências.
+
+    ```text
+    ensure oxmysql
+    ensure vrp
+    ensure pma-voice
+    ensure xsound
+    ensure five-game
+    ```
+  </Step>
+
+  <Step title="Confira o console">
+    Na inicialização, o recurso valida a licença e imprime o status no console, com a data de expiração ou o aviso de licença vitalícia.
+  </Step>
+</Steps>
+
+<Warning>
+  Sem a autenticação da licença, a API interna do recurso não responde: o tablet abre, mas nenhuma partida é criada ou iniciada.
+</Warning>
+
+---
+
+## Banco de dados
+
+O Five Game cria a tabela `five_game_profiles` automaticamente quando o oxmysql fica pronto. Não é preciso importar nenhum `.sql`.
+
+```sql
+CREATE TABLE IF NOT EXISTS `five_game_profiles` (
+    `passport` INT UNSIGNED NOT NULL,
+    `avatar` VARCHAR(255) NULL DEFAULT NULL,
+    `wins` INT UNSIGNED NOT NULL DEFAULT 0,
+    `losses` INT UNSIGNED NOT NULL DEFAULT 0,
+    `kills` INT UNSIGNED NOT NULL DEFAULT 0,
+    `deaths` INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`passport`)
+)
+```
+
+| Coluna | Descrição |
+| --- | --- |
+| `passport` | Identificador do jogador retornado por `framework.requestPassport` |
+| `avatar` | URL da imagem escolhida pelo jogador no perfil |
+| `wins` / `losses` | Partidas vencidas e perdidas |
+| `kills` / `deaths` | Abates e mortes acumulados, usados no ranking e no KDR |
+
+---
+
+## Integração com o framework
+
+As funções que conversam com o seu framework ficam em `server/class/framework.lua`. A versão padrão já vem pronta para vRP. Nenhum outro arquivo chama o framework diretamente — para adaptar a outra base, reescreva apenas as funções abaixo mantendo a mesma assinatura.
+
+<AccordionGroup>
+  <Accordion title="Identidade e saldo" icon="user">
+    Usadas para exibir nomes no lobby, no kill feed e no ranking, e para validar as apostas.
+
+    ```lua
+    -- Identificador único do jogador a partir do source
+    function framework.requestPassport(source) end
+
+    -- Tabela de identidade completa (nome, sobrenome, saldo...)
+    function framework.requestIdentity(passport) end
+
+    -- Nome completo, usado em kill feed, ranking e perfil
+    function framework.requestFullName(passport) end
+
+    -- Só o primeiro nome, usado nas tags de time do lobby
+    function framework.requestName(passport) end
+
+    -- Saldo usado para validar a aposta
+    function framework.requestBalance(passport) end
+    ```
+  </Accordion>
+
+  <Accordion title="Movimentação de dinheiro" icon="coins">
+    Chamadas apenas quando a partida tem aposta. Uma cobra o valor no início, a outra paga o prêmio aos vencedores.
+
+    ```lua
+    -- Cobra o valor da aposta ao iniciar a partida
+    function framework.payment(passport, amount)
+        return vRP.PaymentFull(passport, amount)
+    end
+
+    -- Credita o prêmio ao vencedor no fim da partida
+    function framework.addMoney(passport, amount)
+        return vRP.GiveBank(passport, amount)
+    end
+    ```
+
+    <Tip>
+      Se você não usa apostas, basta deixar `matches.maxBetValue` baixo ou orientar os jogadores a criar partidas sem aposta. As funções de dinheiro só são chamadas quando há valor em disputa.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Permissão de administrador" icon="user-shield">
+    Libera o administrador a espectar partidas criadas com espectadores desativados. Troque pela checagem de permissão da sua base.
+
+    ```lua
+    function framework.isAdmin(passport)
+        local ok, result = pcall(vRP.hasPermission, passport, "Admin")
+
+        if not ok then return false end
+
+        return result == true
+    end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Quando alguma dessas funções falha, o recurso avisa no console com o prefixo `[framework.lua]` em vez de derrubar a partida. Use esse aviso para achar o ponto que ficou fora do padrão na adaptação.
+</Note>
+
+---
+
+## Pontos de adaptação (server)
+
+O arquivo `server/class/adapter.lua` reúne o que costuma variar de servidor para servidor: entrada na partida, snapshot do jogador, entrega de armas e skins.
+
+<AccordionGroup>
+  <Accordion title="Quem pode entrar na partida" icon="user-check">
+    `adapter.canJoin(source)` decide se o jogador está apto a entrar. A regra padrão impede entrar fora do mundo principal ou com vida muito baixa. Adapte para incluir restrições do seu servidor, como estar preso, algemado ou em outra atividade.
+
+    ```lua
+    function adapter.canJoin(source)
+        if GetPlayerRoutingBucket(source) > 0 then
+            return false
+        end
+
+        local playerPed = GetPlayerPed(source)
+        local health    = GetEntityHealth(playerPed)
+
+        return health > 101
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Snapshot e restauração do jogador" icon="floppy-disk">
+    `adapter.savePlayerInfos` guarda vida, colete, posição, bucket e inventário antes da partida, liga as statebags do jogador e desliga o HUD externo pelo evento `hud:Active`. `adapter.applyPlayerInfos` desfaz tudo ao sair.
+
+    ```lua
+    -- Dentro de savePlayerInfos
+    TriggerClientEvent("hud:Active", userSource, false)
+
+    -- Dentro de applyPlayerInfos
+    TriggerClientEvent("hud:Active", userSource, true)
+    ```
+
+    <Tip>
+      Se o HUD da sua base usa outro evento para ser escondido, troque essas duas chamadas. O restante do snapshot funciona sem alterações.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Entrega de armas e anticheat" icon="gun">
+    Três funções controlam as armas da partida: `givePlayerWeapons` (loadout do round), `givePlayerWeapon` (compra na loja ou arma pega do chão) e `removePlayerWeapon` (venda ou troca).
+
+    Quando o recurso `PL_PROTECT` está rodando, elas registram as armas no anticheat antes do fluxo padrão. Se você usa outro anticheat, troque a checagem e os `exports["PL_PROTECT"]` pelos equivalentes dele.
+
+    ```lua
+    local function plProtectActive()
+        return GetResourceState("PL_PROTECT") == "started"
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Skins de arma" icon="paintbrush">
+    `adapter.getWeaponSkin(passport, weaponName)` retorna a skin equipada do jogador. Sem o recurso `five-skins` rodando, retorna `nil` e o jogador recebe a arma base.
+
+    ```lua
+    function adapter.getWeaponSkin(passport, weaponName)
+        if GetResourceState("five-skins") ~= "started" then return nil end
+
+        return exports["five-skins"]:GetWeaponSkin(passport, weaponName)
+    end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Pontos de adaptação (client)
+
+O arquivo `client/class/adapter.lua` concentra a integração com o rádio e com o sistema de skins.
+
+<AccordionGroup>
+  <Accordion title="Rádio do time" icon="microphone">
+    `adapter.setRadio(radio)` coloca o jogador no canal do time ao entrar na partida e o remove ao sair. Troque o `pma-voice` pelo seu recurso de voz mantendo a assinatura.
+
+    ```lua
+    function adapter.setRadio(radio)
+        exports["pma-voice"]:removePlayerFromRadio()
+
+        if not radio or radio <= 0 then return false end
+
+        Wait(50)
+        exports["pma-voice"]:setRadioChannel(radio)
+
+        return true
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Aplicar a skin na arma" icon="gun">
+    `adapter.applyWeaponSkin(weaponName)` é chamado depois de toda entrega de arma. Sem o `five-skins`, o evento simplesmente não tem handler.
+
+    ```lua
+    function adapter.applyWeaponSkin(weaponName)
+        TriggerServerEvent("five-skins:TryApplyComponent", weaponName)
+    end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Durante a partida o jogador é movido para um routing bucket isolado e tem vida, colete, posição e inventário guardados. Ao sair, tudo é restaurado automaticamente. Você não precisa tratar isso manualmente.
+</Note>
+
+---
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Configuração" icon="sliders" href="/five-game/configuracao">
+    Ajuste comando, teclas, mapas, economia, loja e duelo.
+  </Card>
+
+  <Card title="Exports" icon="code" href="/five-game/api/exports">
+    Use `isPlayingGame` para liberar checagens da sua base durante a partida.
+  </Card>
+</CardGroup>

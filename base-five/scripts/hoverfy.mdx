@@ -1,0 +1,47 @@
+---
+title: "hoverfy"
+description: "Exibe uma dica de interação flutuante na NUI (tecla + título + legenda) quando o jogador entra numa área de proximidade no mundo."
+---
+
+O **hoverfy**, apesar do nome, não tem relação com veículos voadores. É um sistema **client-side** de *prompts* contextuais: outros recursos registram pontos (coordenada + raio) e, ao chegar perto, o recurso mostra um painel com **tecla**, **título** e **legenda**.
+
+## Funcionamento
+
+<Steps>
+  <Step title="Registro de displays">
+    Mantém uma lista de displays registrados por outros recursos via `hoverfy:Insert`.
+  </Step>
+  <Step title="Verificação de proximidade">
+    Uma thread (1000ms) compara a distância do jogador ao raio de cada display registrado.
+  </Step>
+  <Step title="Exibição">
+    Ao entrar no raio: `SendNUIMessage({Action="Show", Payload={Key,Title,Legend}})`; ao sair: `Action="Hide"`.
+  </Step>
+</Steps>
+
+<Info>O painel só ativa quando `LocalPlayer.state.Route == 0`.</Info>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">`config/Native.lua`, `lib/Utils.lua`.</Card>
+  <Card title="PolyZone" icon="draw-polygon">Zonas e áreas.</Card>
+</CardGroup>
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+| --- | --- | --- |
+| `hoverfy:Insert(Data)` | Cliente | Registra os displays. `Data` é uma lista de arrays posicionais: `{ [1]=Coords (vec3), [2]=Distance (raio), [3]=Key, [4]=Title, [5]=Legend }`. |
+| `Hoverfy` (StateBag) | Cliente | State bag do player que alterna a visibilidade do painel (`Show`/`Hide`). |
+
+---
+
+## Customização
+
+- **Visual da NUI** (`web-side/`): cor padrão `#5865f2`, fonte `Manrope`, em `style.css`.
+- **Conteúdo das dicas:** definido por quem dispara `hoverfy:Insert` (sem arquivo de config próprio).

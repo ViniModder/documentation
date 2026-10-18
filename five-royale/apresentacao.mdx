@@ -1,0 +1,128 @@
+---
+title: "Apresentação"
+description: "Conheça o Five Royale, o modo Battle Royale completo (solo e em times) com bots, mapas configuráveis e ranking para FiveM."
+---
+
+O **Five Royale** é um modo Battle Royale completo para servidores FiveM. Os jogadores abrem o tablet, escolhem entre disputar sozinhos ou em time, entram em uma sala aberta (ou criam uma nova, se forem administradores), embarcam no avião e pulam de paraquedas sobre o mapa. Dali em diante é sobrevivência: loot espalhado pelo cenário, zona segura que fecha em ciclos e o último time vivo vence.
+
+Times pequenos são sempre uma opção: qualquer jogador pode montar o próprio grupo na hora, com ou sem senha, sem depender de pertencer a uma organização.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Tablet do jogador" icon="tablet-screen-button">
+    Interface NUI com quatro abas: Início, Patente, Recompensas e Administração (para quem tem permissão).
+  </Card>
+
+  <Card title="Várias salas ao mesmo tempo" icon="layer-group">
+    Múltiplos eventos Solo e em Time podem estar abertos e em andamento simultaneamente, cada um isolado em seu próprio routing bucket.
+  </Card>
+
+  <Card title="Cinco modos de disputa" icon="users">
+    Solo, Duo, Trio, Squad e Personalizado, com tamanho de time definido pelo administrador ao criar o evento.
+  </Card>
+
+  <Card title="Bots preenchendo vagas" icon="robot">
+    Quando faltam jogadores reais para fechar a meta da partida, bots com a IA de combate nativa do GTA entram para completar as vagas.
+  </Card>
+
+  <Card title="Mapas configuráveis" icon="map">
+    Los Santos e Cayo Perico incluídos, cada um com sua própria zona inicial, rota de avião e pontos de loot.
+  </Card>
+
+  <Card title="Zona segura dinâmica" icon="circle-notch">
+    A zona fecha em ciclos configuráveis, aplicando dano a quem fica de fora, com aviso sonoro e visual conforme ela se aproxima.
+  </Card>
+
+  <Card title="Loot espalhado pelo mapa" icon="box-open">
+    Caixas de armas, munição, acessórios e consumíveis nascem em pontos sorteados a cada partida.
+  </Card>
+
+  <Card title="Times avulsos e por organização" icon="people-group">
+    Monte um grupo na hora (com senha opcional) ou escale sua organização vRP inteira para um evento em time.
+  </Card>
+
+  <Card title="Ranking e patentes" icon="ranking-star">
+    Pontos por abate e vitória definem a patente do jogador, com recompensas resgatáveis manualmente por tier.
+  </Card>
+
+  <Card title="Modo espectador" icon="eye">
+    Administradores acompanham uma partida em andamento com câmera livre, sem entrar nela.
+  </Card>
+</CardGroup>
+
+---
+
+## O tablet
+
+O tablet é aberto pelo comando `/evento`. Ele concentra tudo o que acontece fora da partida.
+
+<AccordionGroup>
+  <Accordion title="Início" icon="house">
+    Mostra todas as salas abertas no momento, com modo, premiação e quantidade de jogadores. Eventos Solo têm um botão direto para acessar (com prompt de senha, se houver); eventos em Time abrem a escalação da organização ou o atalho para montar um grupo avulso.
+  </Accordion>
+
+  <Accordion title="Patente" icon="trophy">
+    Mostra a patente atual do jogador, pontos, abates e vitórias acumulados, além da distância até a próxima patente.
+  </Accordion>
+
+  <Accordion title="Recompensas" icon="gift">
+    Lista os tiers de patente e o que cada um libera. O jogador resgata manualmente assim que atinge os pontos necessários.
+  </Accordion>
+
+  <Accordion title="Administração" icon="user-shield">
+    Só aparece para quem tem permissão de administrador. Cria uma partida nova (escolhendo modo, mapa, premiação e duração do anúncio) ou entra no modo espectador de uma partida em andamento.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Dentro da partida
+
+<CardGroup cols={2}>
+  <Card title="Bússola e réguas" icon="compass">
+    Bússola sempre visível durante a partida. A régua de altitude aparece durante a queda de paraquedas e a de velocidade enquanto o jogador está em um veículo.
+  </Card>
+
+  <Card title="Mochila própria" icon="briefcase">
+    Bandagem, kit médico, colete, bala energy e kit de acessórios coletados na partida, com uso e descarte por arrastar o item.
+  </Card>
+
+  <Card title="Hotbar de armas" icon="grip">
+    Slots trocados pelas teclas numéricas, preenchidos pelo loot encontrado — a partida não entrega arma nenhuma de graça.
+  </Card>
+
+  <Card title="Kill feed" icon="skull">
+    Cada abate aparece no canto da tela com o nome de quem matou e de quem morreu, incluindo abates contra bots.
+  </Card>
+
+  <Card title="Placar e roster do time" icon="list-ol">
+    Segure a tecla do placar para ver quem ainda está vivo e acompanhe a vida dos companheiros de equipe em tempo real.
+  </Card>
+
+  <Card title="Tela de fim de partida" icon="flag-checkered">
+    Mostra vitória ou eliminação, a posição final e os pontos ganhos na patente.
+  </Card>
+</CardGroup>
+
+<Note>
+  Cada partida roda isolada em seu próprio routing bucket. Vida, posição e inventário do jogador são guardados na entrada e restaurados automaticamente na saída.
+</Note>
+
+---
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Modos e mecânicas" icon="gamepad" href="/five-royale/modos">
+    Entenda times, bots, zona segura, loot e o fluxo completo de uma partida.
+  </Card>
+
+  <Card title="Instalação" icon="download" href="/five-royale/instalacao">
+    Dependências, banco de dados e integração com o seu framework.
+  </Card>
+
+  <Card title="Configuração" icon="sliders" href="/five-royale/configuracao">
+    Referência completa do arquivo `config.lua`.
+  </Card>
+</CardGroup>

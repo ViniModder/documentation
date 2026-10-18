@@ -1,0 +1,310 @@
+---
+title: "Instalação"
+description: "Passo a passo para instalar, adaptar e configurar o Five Battle Pass no seu servidor FiveM."
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="Base Five (vRP)" icon="cube">
+    O recurso já vem pré-configurado para a base Five Network (vRP). A integração fica isolada em `server/class/framework.lua`.
+  </Card>
+
+  <Card title="five-vehicles" icon="car">
+    Opcional. Necessário apenas se você usar recompensas do tipo `vehicle`. A entrega usa o export `giveVehicle`.
+  </Card>
+</CardGroup>
+
+<Info>
+  A persistência padrão usa o playerdata do vRP (`vRP.UserData` e `vRP.setUData`), sem necessidade de criar tabelas. Para outro backend, reescreva `loadUser` e `saveUser` no `framework.lua`.
+</Info>
+
+---
+
+## Instalação do Recurso
+
+<Steps>
+  <Step title="Copie a pasta do recurso">
+    Coloque a pasta `core-battlepass` dentro do diretório de recursos do seu servidor (ex: `resources/[core]/`).
+  </Step>
+  <Step title="Informe o token de licença">
+    Abra o arquivo `token.lua` na raiz do recurso e substitua pelo token recebido.
+
+    ```lua token.lua
+    exports('license', function ()
+        return 'SEU-TOKEN-AQUI'
+    end)
+    ```
+  </Step>
+  <Step title="Adapte o server/class/framework.lua">
+    Arquivo único de integração com o seu framework, já pronto para vRP. Veja a seção [Adaptação de Framework](#adaptação-de-framework).
+  </Step>
+  <Step title="Configure o shared/config.lua">
+    Defina temporada, recompensas, missões, preços e cores. Veja a seção [Configuração](#configuração).
+  </Step>
+  <Step title="Adicione à server.cfg">
+    Inicie o recurso depois do vrp (e do five-vehicles, se usar recompensas de veículo).
+
+    ```text
+    ensure vrp
+    ensure five-vehicles   # opcional
+    ensure core-battlepass
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Você só precisa editar `shared/config.lua` e `server/class/framework.lua`. Os demais arquivos contêm a lógica do sistema e não devem ser alterados.
+</Note>
+
+---
+
+## Adaptação de Framework
+
+Toda a comunicação com o framework está isolada em `server/class/framework.lua`. O arquivo já vem implementado para vRP. Para outro framework, reescreva as funções mantendo o **nome** e o **retorno** esperado.
+
+<AccordionGroup>
+  <Accordion title="Identidade do jogador" icon="user">
+    O sistema usa um identificador único e permanente como chave no banco.
+
+    ```lua
+    -- Chave única do jogador (Passport no vRP)
+    function framework.getIdentifier(source)
+        local passport = vRP.Passport(source)
+        return passport and tostring(passport) or nil
+    end
+    
+    -- Nome de exibição (apenas para logs internos)
+    function framework.getName(source)
+        local passport = vRP.Passport(source)
+        return passport and vRP.FullName(passport)
+    end
+    ```
+
+    <Tip>
+      Em outros frameworks, retorne o identificador permanente: `identifier` (ESX) ou `citizenid` (QBCore).
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Moeda da loja (diamantes / Gemstone)" icon="gem">
+    Saldo gasto para comprar níveis e o passe premium. Aponte para a moeda do seu servidor.
+
+    ```lua
+    -- Saldo atual
+    function framework.getCurrency(source)
+        local passport = vRP.Passport(source)
+        if not passport then return 0 end
+        local license = vRP.License(passport)
+        return tonumber(vRP.UserGemstone(license)) or 0
+    end
+    
+    -- Debita o valor. Retorne true SOMENTE se o débito ocorreu.
+    function framework.removeCurrency(source, amount)
+        local passport = vRP.Passport(source)
+        if not passport then return false end
+        return vRP.PaymentGems(passport, amount) == true
+    end
+    
+    -- Credita o valor (usado pelo benefício do tipo "currency")
+    function framework.addCurrency(source, amount)
+        local passport = vRP.Passport(source)
+        if not passport then return false end
+        vRP.UpgradeGemstone(passport, amount)
+        return true
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Entrega de recompensas (handlers)" icon="gift">
+    Cada `type` de benefício de `globalConfig.rewards` é resolvido aqui. Adicione um handler novo para criar um tipo novo de recompensa.
+
+    ```lua
+    framework.rewardHandlers = {
+        ["item"] = function(ctx)
+            local item, amount = ctx.spec.item, ctx.spec.amount or 1
+            if not item then return false end
+            vRP.GiveItem(ctx.passport, item, amount, true)
+            return true
+        end,
+    
+        ["money"] = function(ctx)
+            local amount = ctx.spec.amount or 0
+            if amount <= 0 then return false end
+            vRP.GiveBank(ctx.passport, amount, false)
+            return true
+        end,
+    
+        ["currency"] = function(ctx)
+            local amount = ctx.spec.amount or 0
+            if amount <= 0 then return false end
+            vRP.UpgradeGemstone(ctx.passport, amount)
+            return true
+        end,
+    
+        ["vehicle"] = function(ctx)
+            local model = ctx.spec.model
+            if not model then return false end
+            local result = exports["five-vehicles"]:giveVehicle(ctx.passport, model)
+            return result and result.ok == true
+        end,
+    
+        ["custom"] = function(ctx)
+            if type(ctx.spec.handler) == "function" then
+                return ctx.spec.handler(ctx) ~= false
+            end
+            return false
+        end,
+    }
+    ```
+
+    O `ctx` recebido por cada handler contém:
+
+    | Campo | Tipo | Descrição |
+    | --- | --- | --- |
+    | `source` | `number` | Server ID do jogador |
+    | `passport` | `number` | Identificador permanente (Passport) |
+    | `identifier` | `string` | Identificador como string (chave no banco) |
+    | `level` | `number` | Nível da recompensa sendo resgatada |
+    | `tier` | `string` | `"classic"` ou `"premium"` |
+    | `spec` | `table` | O próprio benefício do `config.lua` |
+  </Accordion>
+
+  <Accordion title="Persistência" icon="database">
+    Por padrão usa o playerdata do vRP. Troque por oxmysql ou outro banco mantendo as assinaturas.
+
+    ```lua
+    -- Chamado no start do recurso (crie a tabela aqui se o seu banco precisar)
+    function framework.ensureStorage() end
+    
+    -- Carrega o estado: retorna season e data (tabela), ou nil/nil
+    function framework.loadUser(identifier)
+        local passport = tonumber(identifier)
+        if not passport then return nil, nil end
+        local stored = vRP.UserData(passport, "core_battlepass")
+        if type(stored) ~= "table" then return nil, nil end
+        return stored.season, stored.data
+    end
+    
+    -- Salva o estado do jogador
+    function framework.saveUser(identifier, season, data)
+        local passport = tonumber(identifier)
+        if not passport then return end
+        vRP.setUData(passport, "core_battlepass", json.encode({ season = season, data = data }))
+    end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Configuração
+
+Toda a configuração fica em `shared/config.lua`, na tabela global `globalConfig`.
+
+<AccordionGroup>
+  <Accordion title="Abertura, cores e logo" icon="sliders">
+    ```lua
+    globalConfig.command = "battlepass" -- comando de abertura (false desativa)
+    globalConfig.openKey = false        -- tecla fixa (ex: "F6"); false desativa
+    
+    globalConfig.colors = {
+        primaryColor   = "#0095ff", -- destaques, barras, botões
+        secondaryColor = "#0a1a2e", -- fundo / superfícies escuras
+        thirdyColor    = "#f5bf42", -- cor do tier premium (dourado)
+    }
+    
+    globalConfig.logo = "https://cdn.fivenetwork.dev/.../LOGO.png"
+    ```
+  </Accordion>
+
+  <Accordion title="Temporada e progressão" icon="calendar-days">
+    ```lua
+    globalConfig.season = {
+        id          = "season-1",   -- mudar o id reinicia o progresso de todos
+        description = "Suba de nível, complete tarefas...",
+        totalLevels = 20,           -- deve bater com #globalConfig.rewards
+    }
+    
+    globalConfig.progression = {
+        xpForLevel = function(level)
+            return 1000             -- XP para avançar de cada nível
+        end,
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Economia" icon="gem">
+    ```lua
+    globalConfig.economy = {
+        pricePerLevel  = 5,
+        premiumPrice   = 75,
+        maxBuyAmount   = 50,
+        showBuyLevels  = true,
+        showBuyPremium = true,
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="XP por tempo online" icon="clock">
+    Concede XP automaticamente a cada X minutos de conexão.
+
+    ```lua
+    globalConfig.onlineXp = {
+        enabled  = true, -- liga/desliga
+        interval = 10,   -- a cada quantos MINUTOS
+        amount   = 50,   -- quanto de XP por intervalo
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Recompensas por nível" icon="layer-group">
+    Uma entrada por nível (1 até `totalLevels`), cada uma com os tiers `classic` e `premium`. Cada tier tem `name`, `image` (URL na UI) e a lista `benefits`.
+
+    ```lua
+    globalConfig.rewards = {
+        {
+            level = 1,
+            classic = {
+                name  = "Mochila",
+                image = "https://cdn.fivenetwork.dev/Itens/backpackg.png",
+                benefits = {
+                    { type = "item", item = "backpack", amount = 1 },
+                },
+            },
+            premium = {
+                name  = "Mochila Pro",
+                image = "https://cdn.fivenetwork.dev/Itens/backpackg.png",
+                benefits = {
+                    { type = "item", item = "backpack", amount = 1 },
+                    { type = "currency", amount = 10 },
+                },
+            },
+        },
+        -- ... demais níveis
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Missões" icon="list-check">
+    `group` aceita exatamente `"Diárias"`, `"Semanais"` ou `"Temporada"`. `reset` define quando o progresso zera.
+
+    ```lua
+    globalConfig.tasks = {
+        {
+            id          = 1,
+            group       = "Diárias",
+            reset       = "daily",      -- daily | weekly | season
+            total       = 10,           -- meta
+            xp          = 150,          -- XP creditado ao resgatar
+            title       = "Elimine 10 jogadores",
+            description = "Complete o objetivo durante as partidas.",
+        },
+        -- ... demais missões
+    }
+    ```
+
+    <Tip>
+      O progresso é avançado por outros scripts com [`addMissionProgress`](/five-battlepass/api/exports#addmissionprogress).
+    </Tip>
+  </Accordion>
+</AccordionGroup>

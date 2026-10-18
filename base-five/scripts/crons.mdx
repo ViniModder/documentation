@@ -1,0 +1,100 @@
+---
+title: "crons"
+description: "Agendador de tarefas que executa ações no servidor após um tempo determinado, persistindo os agendamentos em disco. Usado pelo `admin` para permissões e veículos temporários que expiram sozinhos."
+---
+
+O **crons** mantém uma lista de "Jobs" em memória, cada um com um horário de disparo (`Timer`, timestamp Unix). Uma thread verifica a lista a cada **10 minutos** (`Wait(600000)`) e executa/remove os Jobs vencidos. É usado pelo `admin` para permissões e veículos temporários que expiram sozinhos.
+
+## Funcionalidades
+
+A função `Execute` suporta três modos de agendamento.
+
+<CardGroup cols={3}>
+  <Card title="RemovePermission" icon="user-minus">
+    `vRP.RemovePermission(Passport, Params.Permission)`.
+  </Card>
+
+  <Card title="WipePermission" icon="trash">
+    `vRP.RemSrvData("Permissions:"..Params.Permission)`.
+  </Card>
+
+  <Card title="RemoveVehicle" icon="car">
+    Localiza o veículo pelo `Params.Model` via `five-vehicles`, apaga o baú e remove o veículo.
+  </Card>
+</CardGroup>
+
+<Note>
+  A verificação é a cada 10 min, então a expiração pode atrasar até esse intervalo.
+</Note>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="server">
+  </Card>
+
+  <Card title="five-vehicles" icon="car">
+    Apenas para o modo `RemoveVehicle`.
+  </Card>
+</CardGroup>
+
+---
+
+## Exports
+
+Todos recebem o `Passport` e gravam em `config.json` ao final.
+
+<AccordionGroup>
+  <Accordion title="exports.crons:Insert(Passport, Mode, Timer, Params)" icon="plus">
+    Agenda um Job. `Timer` em **minutos** (convertido para segundos). Se já existir Job idêntico, o tempo é **somado** ao existente.
+
+    ```lua
+    -- Remove a permissão em 60 minutos
+    exports.crons:Insert(Passport, "RemovePermission", 60, { Permission = "police.recruta", Level = 1 })
+    ```
+  </Accordion>
+
+  <Accordion title="exports.crons:Remove(Passport, Mode, Param)" icon="minus">
+    Remove Job(s) que casem `Mode` e o valor `Param` (`Params.Permission` ou `Params.Model`).
+  </Accordion>
+
+  <Accordion title="exports.crons:Swap(Passport, NewPassport)" icon="arrow-right-arrow-left">
+    Transfere todos os Jobs de um passaporte para outro (troca de personagem).
+  </Accordion>
+
+  <Accordion title="exports.crons:Check(Passport, Mode, Params)" icon="clock">
+    Retorna o tempo restante em **segundos** (`Timer - os.time()`), ou `false`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Eventos
+
+Este recurso não registra eventos próprios. A integração é feita apenas pelos exports (`Insert`, `Remove`, `Swap`, `Check`).
+
+---
+
+## Banco de Dados
+
+Não usa banco. A persistência fica em arquivo **`config.json`** (raiz do recurso) via `SaveResourceFile`/`LoadResourceFile`.
+
+---
+
+## Customização
+
+<CardGroup cols={3}>
+  <Card title="Intervalo de verificação" icon="clock">
+    `Wait(600000)` em `server-side/core.lua` (ms; padrão 10 min).
+  </Card>
+
+  <Card title="Novos modos" icon="gears">
+    Adicione condições na função `Execute` e nas comparações de `Params`.
+  </Card>
+
+  <Card title="Reset" icon="trash">
+    Zere `config.json` para `[]` para limpar todos os agendamentos.
+  </Card>
+</CardGroup>

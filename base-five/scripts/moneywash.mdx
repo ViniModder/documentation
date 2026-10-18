@@ -1,0 +1,127 @@
+---
+title: "moneywash"
+description: "Lavagem de dinheiro físico por máquinas que o jogador instala no mundo: converte dinheiro sujo em molhado e, ao longo do tempo, em dinheiro limpo, consumindo bateria e alvejante."
+---
+
+O **moneywash** é um sistema de lavagem de dinheiro físico por máquinas que o jogador instala no mundo. Cada máquina tem dois compartimentos: **primário** recebe o depósito (`dirtydollar` → acumula em `Money`; ao esvaziar devolve `wetdollar`) e **secundário** acumula o processado (`Washed`; ao esvaziar devolve `dollar` limpo).
+
+Um loop no servidor (a cada 10s) processa parte do primário para o secundário se houver **bateria** (`Timer`) e **alvejante** (`Bleach`) ativos e `Money > 0`. Eficiência: base `0.05` + `BleachPercentage` (`0.01`) = 6% por ciclo. Cada máquina tem código `DDLLDDLL` e guarda dono, posição, route, valores, validades e senha.
+
+Persistência via `vRP.GetSrvData("MoneyWash")` em memória, salva em `entitydata` (chave `MoneyWash`) no `SaveServer`. No cliente, máquinas só renderizam para jogadores com `state.Active` cuja `Route` coincida, dentro de 50 unidades.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Máquinas no mundo" icon="washing-machine">
+    O jogador instala máquinas físicas a partir de itens, cada uma com dono e posição.
+  </Card>
+  <Card title="Dois compartimentos" icon="boxes-stacked">
+    Primário recebe `dirtydollar`; secundário acumula o dinheiro processado.
+  </Card>
+  <Card title="Processamento contínuo" icon="arrows-rotate">
+    Loop de 10s converte parte do primário em limpo enquanto houver insumos.
+  </Card>
+  <Card title="Bateria e alvejante" icon="battery-half">
+    Consome `washbattery` e `washbleach`, com validades configuráveis.
+  </Card>
+  <Card title="Proteção por senha" icon="lock">
+    Cada máquina tem código `DDLLDDLL` e senha definida pelo dono.
+  </Card>
+  <Card title="Persistência" icon="floppy-disk">
+    Máquinas salvas em `entitydata` (chave `MoneyWash`) no `SaveServer`.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="layer-group">
+    Núcleo e `SrvData`.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Suporte de zonas.
+  </Card>
+  <Card title="ox_target" icon="crosshairs">
+    Zona de interação da máquina.
+  </Card>
+  <Card title="dynamic" icon="bars">
+    Menu de interação.
+  </Card>
+  <Card title="keyboard" icon="keyboard">
+    Entrada de quantidade/senha.
+  </Card>
+</CardGroup>
+
+<Info>**five_logs** é *opcional*. Itens necessários (em `vrp/config/Item.lua`): `dirtydollar`, `wetdollar`, `dollar`, `washbattery`, `washbleach`.</Info>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="shared-side/shared.lua — durações e eficiência" icon="gear">
+    | Variável | Padrão | Descrição |
+    |---|---|---|
+    | `BleachDuration` | `21600` | Duração do alvejante (6h). |
+    | `BleachPercentage` | `0.01` | Bônus de eficiência somado à base (`0.05`). |
+    | `BatteryDuration` | `604800` | Duração da bateria (7 dias). |
+  </Accordion>
+  <Accordion title="server-side/core.lua — valores fixos" icon="server">
+    Valores fixos no `server-side/core.lua`: eficiência base `0.05`, intervalo de 10s, `Last = os.time() + 300`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Exports
+
+**`exports.moneywash:Wash(Passport, Item, Hash, Coords, Route)`** (servidor): cria e registra uma nova máquina no mundo. Chamado pelo `inventory` ao usar os itens `moneywash`/`moneywashplus`/`moneywashalpha`/`moneywashomega`.
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+Publica a interface `moneywash` (tabela `Core`) no servidor, consumida pelo cliente.
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+|---|---|
+| `moneywash:Add` | Deposita dinheiro sujo (`dirtydollar`) no compartimento primário da máquina. |
+| `moneywash:Money` | Esvazia o primário, devolvendo `wetdollar`. |
+| `moneywash:Washed` | Esvazia o secundário, devolvendo `dollar` limpo. |
+| `moneywash:Battery` | Insere/recarrega a bateria (`washbattery`). |
+| `moneywash:Bleach` | Insere/recarrega o alvejante (`washbleach`). |
+| `moneywash:Password` | Define/altera a senha da máquina. |
+| `moneywash:StoreObjects` | Recolhe a máquina do mundo, devolvendo-a como item. |
+| `Connect` | Envia a tabela de máquinas ao jogador que conecta. |
+| `Disconnect` | Tratamento de saída do jogador. |
+| `SaveServer` | Persiste as máquinas em `entitydata` (chave `MoneyWash`). |
+
+### Cliente
+
+| Evento | Descrição |
+|---|---|
+| `moneywash:Table` | Recebe a tabela completa de máquinas. |
+| `moneywash:New` | Adiciona uma nova máquina criada. |
+| `moneywash:Remove` | Remove uma máquina recolhida. |
+| `moneywash:Information` | Abre o menu de informações/interação de uma máquina. |
+
+---
+
+## Banco de Dados
+
+Sem tabela própria. Persiste em `entitydata` (chave `MoneyWash`) via `entitydata/SetData` no `SaveServer`.
+
+---
+
+## Customização
+
+- **Duração dos insumos:** `BatteryDuration`, `BleachDuration` (`shared-side/shared.lua`).
+- **Bônus do alvejante:** `BleachPercentage`.
+- **Eficiência base / intervalo / `Last`:** no loop em `server-side/core.lua`.
+- **Distância de render (50) / box zone:** `client-side/core.lua`.

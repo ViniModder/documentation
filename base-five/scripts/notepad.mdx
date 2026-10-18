@@ -1,0 +1,87 @@
+---
+title: "notepad"
+description: "Item de bloco de notas (papel gravável): permite ao jogador abrir, escrever e salvar um texto pessoal por item, com persistência no banco."
+---
+
+O **notepad** é um item de inventário que abre uma folha de papel (NUI) onde o jogador digita um texto livre (até 1500 caracteres). O conteúdo fica vinculado ao **ID único do item** (`notepad:<id>`), então cada bloco guarda seu próprio texto.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Bloco de notas pessoal" icon="note-sticky">
+    Folha de papel em NUI para escrever texto livre de até 1500 caracteres.
+  </Card>
+  <Card title="Texto por item" icon="fingerprint">
+    O conteúdo é vinculado ao ID único do item (`notepad:<id>`), um texto por bloco.
+  </Card>
+  <Card title="Persistência no banco" icon="floppy-disk">
+    O texto é salvo no sistema `SrvData`/`entitydata` do vRP.
+  </Card>
+  <Card title="Salvar ao fechar" icon="door-closed">
+    Pressionar ESC grava o texto automaticamente via `itemdata:Save`.
+  </Card>
+</CardGroup>
+
+---
+
+## Como funciona
+
+<Steps>
+  <Step title="Usar o item">
+    O jogador usa o item `notepad`.
+  </Step>
+  <Step title="Carregar o texto">
+    O servidor (recurso `inventory`) lê o texto salvo e dispara `notepad:Open` com o texto atual.
+  </Step>
+  <Step title="Editar">
+    O jogador edita e pressiona **ESC**.
+  </Step>
+  <Step title="Salvar">
+    Ao fechar, o cliente envia o texto via callback `Save`, que dispara `itemdata:Save` para gravar.
+  </Step>
+</Steps>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="layer-group">
+    `GetSrvData` / `SetSrvData`.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Suporte de zonas.
+  </Card>
+  <Card title="inventory" icon="box">
+    Uso do item + `itemdata:Save`.
+  </Card>
+  <Card title="hud" icon="display">
+    `hud:Active`.
+  </Card>
+</CardGroup>
+
+---
+
+## Eventos
+
+| Evento | Lado | Descrição |
+|---|---|---|
+| `notepad:Open` | Cliente | Ativa a NUI (`Item`, `Text`), oculta o HUD e preenche o textarea com o texto salvo. |
+| `Save` | NUI | Recebe `{ text }` ao pressionar ESC e encaminha o texto ao servidor via `itemdata:Save`. |
+
+<Note>A gravação efetiva ocorre no recurso **inventory** (evento `itemdata:Save`), via `vRP.SetSrvData(Item, Text, true)`.</Note>
+
+---
+
+## Banco de Dados
+
+Sem tabela própria, usa o sistema `SrvData`/`entitydata` do vRP. `vRP.SetSrvData("notepad:<id>", texto, true)` grava na tabela `entitydata` (`Name`/`Information` JSON via `entitydata/SetData`). Leitura inicial: `vRP.GetSrvData("notepad:<id>", true)`.
+
+---
+
+## Customização
+
+- **Limite de caracteres:** `maxlength="1500"` no `textarea` (`web-side/index.html`).
+- **Aparência:** `web-side/css.css` + `background.png`.
+- **Tecla de fechar/salvar:** `Escape` em `web-side/script.js`.
+- **Item/uso:** definido no recurso `inventory` (`server-side/itens.lua`).

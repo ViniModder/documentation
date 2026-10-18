@@ -1,0 +1,175 @@
+---
+title: "propertys"
+description: "Sistema de propriedades e casas: compra/venda de imóveis e galpões, hotel inicial gratuito, baú e geladeira por propriedade, guarda-roupa, troca de interior, cartões de acesso, hipoteca recorrente e sistema de invasão (roubo)."
+---
+
+O **propertys** gerencia mais de 2000 pontos de propriedade no mapa (tecla **E**). Cada ponto pode estar **livre** (menu de compra), **comprado** (menu de gestão) ou ser o **Hotel** (gratuito, para quem não tem imóvel). Ao entrar, o jogador vai para o interior num routing bucket isolado, com baú e geladeira (`ox_target`) e guarda-roupa. Cada imóvel gera um item de chave (`propertys-<Serial>`). Cobra **hipoteca** a cada 30 dias (25% do preço); sem pagar, é removido após 15 dias de tolerância. Permite **invadir** imóveis com `lockpick`.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="2000+ Propriedades" icon="house">
+    Pontos de propriedade espalhados pelo mapa, cada um livre para compra, já comprado ou reservado para o Hotel inicial gratuito.
+  </Card>
+  <Card title="Interiores Isolados" icon="door-open">
+    Ao entrar, o jogador é teleportado para um interior em routing bucket próprio, totalmente separado dos demais.
+  </Card>
+  <Card title="Baú e Geladeira" icon="box-archive">
+    Cada propriedade tem armazenamento próprio de baú e geladeira, acessíveis via `ox_target` dentro do interior.
+  </Card>
+  <Card title="Guarda-roupa" icon="shirt">
+    Salve e aplique skins do guarda-roupa diretamente na propriedade, com limites por nível VIP.
+  </Card>
+  <Card title="Hipoteca Recorrente" icon="money-bill-trend-up">
+    Cobrança a cada 30 dias (25% do preço); sem pagamento, o imóvel é removido após 15 dias de tolerância.
+  </Card>
+  <Card title="Cartões de Acesso" icon="id-card">
+    Crie até 5 cartões-chave para liberar acesso de outros jogadores à propriedade.
+  </Card>
+  <Card title="Troca de Interior" icon="arrows-rotate">
+    Altere o interior do imóvel pagando a diferença de gemas entre os modelos.
+  </Card>
+  <Card title="Invasão (Roubo)" icon="user-ninja">
+    Imóveis podem ser invadidos com `lockpick`, com saque de móveis e cofre principal.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={3}>
+  <Card title="vrp" icon="cubes">Framework base.</Card>
+  <Card title="PolyZone" icon="draw-polygon">Zonas dos pontos.</Card>
+  <Card title="ox_target" icon="crosshairs">Baú, geladeira e móveis.</Card>
+  <Card title="dynamic" icon="bars">Menus de gestão.</Card>
+  <Card title="five-bank" icon="building-columns">`CheckTaxes`/`CheckFines`/`AddTaxes`.</Card>
+  <Card title="oxmysql" icon="database">Persistência.</Card>
+</CardGroup>
+
+<Info>
+  Opcional: **five_logs**. Tunnels usados: `keyboard`, `skinshop`.
+</Info>
+
+---
+
+## Configuração
+
+Este recurso não possui pasta `config/` — todas as configurações ficam em `shared-side/`.
+
+<AccordionGroup>
+  <Accordion title="informations.lua — preços e capacidades por interior" icon="tags">
+    ```lua
+    Informations = {
+        Emerald  = { Price = 500000,  Vault = 100, Fridge = 25,  Gemstone = 25000 },
+        Ruby     = { Price = 750000,  Vault = 150, Fridge = 40,  Gemstone = 37500 },
+        -- Sapphire, Amethyst, Amber, Galpao (sem Fridge)
+    }
+    -- Hipoteca = Price * 0.25 | Venda devolve Price * 0.25 | Troca de interior custa a diferença de Gemstone
+    ```
+  </Accordion>
+  <Accordion title="interiors.lua — coordenadas internas (Internal)" icon="location-dot">
+    Por interior: `Exit`, `Vault`, `Fridge`, `Clothes` e `Furniture` (móveis saqueáveis; chave `"Locker"` = cofre principal).
+  </Accordion>
+  <Accordion title="propertys.lua — pontos no mundo (Propertys)" icon="map-pin">
+    ```lua
+    Propertys = {
+        Hotel = { Coords = vec3(-772.76,312.81,85.7) },
+        Propertys0001 = { Coords = vec3(996.77,-729.57,57.82) },
+        Propertys2089 = { Coords = vec3(...), Galpao = true },  -- galpão (não invadível)
+    }
+    ```
+  </Accordion>
+  <Accordion title="robbery.lua — loot da invasão (LockerItens, OtherItens)" icon="sack-dollar">
+    Cada item: `Item`, `Chance` (peso), `Min`, `Max`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+Este recurso não registra comandos (`RegisterCommand`). Os blips são ligados pelo botão **Propriedades** do menu `dynamic` (evento `propertys:Blips`).
+
+---
+
+## Exports
+
+```lua
+-- server:
+exports["propertys"]:SetSavedInterior(Name, Interior)
+exports["propertys"]:RefreshProperty(Name)         -- re-sincroniza caches + blips
+-- shared:
+exports["propertys"]:Interiors()                   -- lista interiores válidos + recursos
+exports["propertys"]:InteriorFeatures(name)
+exports["propertys"]:Coords(Name)
+```
+
+<Info>
+  Interface Tunnel `propertys`: `Propertys`, `Toggle`, `Mount`/`Store`/`Take` (baú/geladeira), `Clothes`, `Markers`, etc.
+</Info>
+
+---
+
+## Eventos
+
+A interface `propertys` (servidor) é exposta via `Tunnel.bindInterface` para o cliente.
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+|---|---|
+| `propertys:Robbery` | Inicia a invasão de um imóvel (`lockpick`/`lockpickplus` ou polícia). |
+| `propertys:RobberyItem` | Saqueia um móvel específico do interior durante a invasão. |
+| `propertys:Buy` | Compra do imóvel/galpão no ponto livre. |
+| `propertys:Lock` | Tranca/destranca a propriedade. |
+| `propertys:Interior` | Troca o interior do imóvel (cobra a diferença de gemas). |
+| `propertys:Sell` | Vende o imóvel (devolve 25% do preço). |
+| `propertys:Transfer` | Transfere a propriedade para outro jogador. |
+| `propertys:Credentials` | Lista/gerencia os cartões de acesso. |
+| `propertys:Item` | Cria um cartão de chave (máx. 5, 150k). |
+| `propertys:Clothes` | Salva/aplica o guarda-roupa da propriedade. |
+| `CharacterChosen` | Hook de seleção de personagem (core). |
+| `Disconnect` | Limpeza de estado do jogador ao sair (core). |
+
+### Cliente
+
+| Evento | Descrição |
+|---|---|
+| `propertys:Enter` | Teleporta para o interior (modo normal ou invasão). |
+| `propertys:OpenVault` | Abre o baú da propriedade (handler do `ox_target`). |
+| `propertys:OpenFridge` | Abre a geladeira da propriedade (handler do `ox_target`). |
+| `propertys:RemCircleZone` | Remove a zona `ox_target` de um móvel saqueado. |
+| `propertys:RefreshBlip` | Atualiza/cria/remove o blip de uma propriedade em tempo real. |
+| `propertys:Blips` | Liga/desliga os blips das propriedades no mapa. |
+| `inventory:Close` | Fecha o baú/geladeira aberto. |
+
+### NUI Callbacks
+
+| Callback | Descrição |
+|---|---|
+| `Mount` | Monta o conteúdo do baú/geladeira na NUI. |
+| `Take` | Retira item do baú/geladeira. |
+| `Store` | Guarda item no baú/geladeira. |
+| `Update` | Atualiza a quantidade de um slot. |
+
+---
+
+## Banco de Dados
+
+A tabela `propertys` (`Name`, `Interior`, `Item` cartões, `Tax` vencimento, `Passport`, `Serial`, `Vault`, `Fridge`, `Garage`) armazena cada propriedade.
+
+<Note>
+  Conteúdo do baú/geladeira em srvdata (`Vault:<Name>`/`Fridge:<Name>`); guarda-roupa em `Wardrobe:<Passport>`. Hipoteca: `Tax = UNIX + 86400*30`; tolerância de 15 dias (`+1296000`).
+</Note>
+
+---
+
+## Customização
+
+- **Preços/capacidades:** `Informations` (afeta hipoteca, venda e troca).
+- **Pontos:** `Propertys` (marque `Galpao = true` p/ galpões).
+- **Interiores:** `Internal` + `Informations` (mesma chave).
+- **Loot da invasão:** `LockerItens`/`OtherItens`.
+- **Cartões (máx 5)/valor (150k):** handler `propertys:Item` (`server-side/core.lua`).
+- **Guarda-roupa por VIP:** `Core.Clothes` (Ouro 6/Prata 4/Bronze 2).

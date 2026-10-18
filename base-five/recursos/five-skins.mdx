@@ -1,0 +1,180 @@
+---
+title: "five-skins"
+description: "Sistema de skins de armas (caixas/cases, inventário, loja, trocas entre jogadores, aprimoramento, ranking e teste de armas) com painel NUI em React, integrado ao vRP e ao inventário."
+---
+
+O **five-skins** é um sistema de cosméticos de armas. O jogador abre **caixas** (pagas com a moeda interna **SkinsCoins** ou caixa diária grátis) e recebe skins por sorteio ponderado; gerencia o inventário por categoria (equipar/vender/comprar); **troca** skins com outros (taxa em vouchers); faz **aprimoramento** (consome skins \+ saldo por uma de maior valor); vê ranking e testa armas. O inventário fica em cache e é persistido a cada 5 min. A skin equipada é aplicada via integração com o resource `inventory`.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Caixas e sorteio" icon="box-open">
+    Abertura de caixas pagas com SkinsCoins ou diária grátis, com skins entregues por sorteio ponderado.
+  </Card>
+
+  <Card title="Inventário por categoria" icon="layer-group">
+    Gerencie skins por categoria: equipar, vender e comprar. Cache persistido a cada 5 min.
+  </Card>
+
+  <Card title="Trocas entre jogadores" icon="arrow-right-arrow-left">
+    Troque skins com outros jogadores, com taxa cobrada em vouchers.
+  </Card>
+
+  <Card title="Aprimoramento" icon="wand-magic-sparkles">
+    Consome skins \+ saldo para tentar obter uma de maior valor.
+  </Card>
+
+  <Card title="Ranking" icon="ranking-star">
+    Histórico e ranking de skins ganhas pelos jogadores.
+  </Card>
+
+  <Card title="Teste de armas" icon="crosshairs">
+    Testa armas em uma área isolada (routing bucket) antes de decidir.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    Framework base (Tunnel/Proxy, `Passport`, `HasGroup`, `UserGemstone`, `PaymentGems`, `Query`).
+  </Card>
+
+  <Card title="oxmysql" icon="database">
+    Banco de dados.
+  </Card>
+
+  <Card title="inventory" icon="boxes-stacked">
+    Integração: consome `GetWeaponSkin`/`GetBaseWeapon` e dispara `five-skins:TryApplyComponent`. Sem ele, a skin não aparece na arma.
+  </Card>
+
+  <Card title="five_logs" icon="file-lines">
+    Opcional: logs admin.
+  </Card>
+</CardGroup>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — tabela Skins" icon="sliders">
+    ```lua
+    Skins.Command = "skins"            -- painel do jogador
+    Skins.AdminCommand = "skinsadm"    -- painel admin
+    Skins.StaffPermission = "Admin"    -- grupo p/ admin (HasGroup nível 1)
+    Skins.ThemeColor = "#0095f3"       -- cor base (Theme.main tem prioridade)
+    Skins.SyncInterval = 60000 * 5     -- intervalo de gravação no banco (5 min)
+    Skins.UseFrameworkCoins = false    -- true = usa gemstone do vRP em vez de SkinsCoins
+    
+    Skins.RarityMap = { common="comum", rare="raro", epic="epico", legendary="lendario" }
+    
+    Skins.TradeExpireMs = 86400000     -- validade de uma troca (24h)
+    Skins.TradeVoucherRate = 0.02      -- taxa de troca (2% em vouchers)
+    
+    Skins.WeaponTest = { Coords = vec4(...), Ammo = 250, MaxSeconds = 600, ExitKey = 177, ... }
+    
+    Skins.Improvement = {
+        Enabled = true, RequirePlayerSkin = true,
+        ChanceExponent = 1.5, MinChance = 1, MaxChance = 95,
+        MinTargetMarkup = 1.2, MaxTargetMarkup = 5.0,
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="config/cases.lua — caixas" icon="box-open">
+    ```lua
+    {
+        id = "pistola", name = "Box Pistol", price = 75, badge = "new",
+        image = "https://.../CaixaPistola.png",
+        -- free = true, cooldownSeconds = 86400,  -- para caixa diária grátis
+        -- permission = "Policia",                 -- restringe abertura
+        skins = { { id = "Glock_Rajada_Anime" }, ... },  -- ids de config/weapons.lua
+    }
+    ```
+
+    <Note>
+      A **chance** vem do campo `chance` de cada skin (em `weapons.lua`), não da caixa.
+    </Note>
+  </Accordion>
+
+  <Accordion title="config/weapons.lua — skins" icon="gun">
+    ```lua
+    {
+        id = "AK_Storm", name = "AK-103 Storm",
+        image = "./assets/images/.../imgSkin.webp",
+        rarity = "legendary",   -- chave de RarityMap
+        chance = 10,            -- peso no sorteio
+        price = 40,             -- compra/venda(metade)/aprimoramento
+        modType = "modWeapon",  -- "modWeapon" (componente) | "alternativeWeapon" (arma alternativa)
+        data = { dbWeapon = "WEAPON_ASSAULTRIFLE", weapon = "...", component = "..." },
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Comandos
+
+A permissão de staff é `Skins.StaffPermission` (padrão `"Admin"`, via `vRP.HasGroup` nível 1, função `CheckStaff`).
+
+| Comando | Permissão | Descrição |
+| --- | --- | --- |
+| `/skins` | Nenhuma (qualquer jogador) | Abre o painel de skins (nome em `Skins.Command`). |
+| `/skinsadm` | `Admin` (`Skins.StaffPermission`) | Abre o painel administrativo (nome em `Skins.AdminCommand`). |
+| `/giveallskins <passport>` | `Admin` (`Skins.StaffPermission`) | Entrega todas as skins ao passport. |
+| `/addskinscoin /remskinscoin /setskinscoin /checkskinscoin <passport> <qtd>` | `Admin` (`Skins.StaffPermission`) | Adiciona/remove/define/consulta SkinsCoins (só registrados se `UseFrameworkCoins = false`). |
+| `/addskinvoucher /remskinvoucher /setskinvoucher /checkskinvoucher <passport> <qtd>` | `Admin` (`Skins.StaffPermission`) | Adiciona/remove/define/consulta Vouchers. |
+
+---
+
+## Exports
+
+Exports disponíveis para gerenciar moedas, vouchers e skins equipadas.
+
+```lua
+exports["five-skins"]:GetSkinsCoins(passport) / GiveSkinsCoins / RemoveSkinsCoins / SetSkinsCoins
+exports["five-skins"]:GetVouchers(passport) / GiveVouchers / RemoveVouchers / SetVouchers
+exports["five-skins"]:GetWeaponSkin(passport, weaponName)  -- arma alternativa equipada (usado pelo inventory)
+exports["five-skins"]:GetBaseWeapon(weaponName)            -- arma base
+```
+
+---
+
+## Banco de Dados
+
+As tabelas são criadas automaticamente.
+
+| Tabela | Descrição |
+| --- | --- |
+| `core_skins_inventory` | Inventário por jogador. |
+| `core_skins_wins` | Histórico/ranking. |
+| `core_skins_trades` | Trocas. |
+
+<Note>
+  SkinsCoins/Vouchers/cooldowns ficam em `vRP.UserData` (não em tabela).
+</Note>
+
+---
+
+## Localizações
+
+O recurso não cria NPCs nem blips no mapa. As coordenadas usadas são pontos de teleporte para áreas isoladas (routing bucket), não locais públicos:
+
+| Local | Coordenadas | Tipo |
+| --- | --- | --- |
+| Teste de arma (`Skins.WeaponTest.Coords`) | `vec4(13.57, -1097.23, 29.82, 343.0)` | Ponto de teleporte do teste de armas (bucket isolado) |
+| Câmera de preview da skin | `vec3(235.86, -977.57, -98.80)` | Ped de preview na NUI (interior oculto, client) |
+| Posição da câmera de preview | `vec3(234.86, -977.57, -98.65)` | Câmera do preview (client) |
+
+---
+
+## Customização
+
+- **Caixas/skins:** `config/cases.lua` e `config/weapons.lua`.
+- **Economia:** `UseFrameworkCoins`, `Skins.Improvement`, `TradeVoucherRate`.
+- **Teste de arma:** `Skins.WeaponTest`.
+- **Textos:** `Skins.Language`.

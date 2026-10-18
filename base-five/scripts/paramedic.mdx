@@ -1,0 +1,108 @@
+---
+title: "paramedic"
+description: "Ferimentos, sangramento, diagnóstico médico e reanimação: tratamento com seringas de sangue, ataduras, adrenalina, doação de sangue e fardas (presets) de emergência."
+---
+
+O **paramedic** gerencia a saúde médica avançada do servidor: ferimentos por osso, sangramento contínuo, tratamento por profissionais, diagnóstico, reanimação e o sistema de tipos sanguíneos com doação e extração de sangue.
+
+## Funcionalidades
+
+<CardGroup cols={2}>
+  <Card title="Ferimentos por osso" icon="bone">
+    Ao tomar dano, o cliente registra o osso atingido e incrementa o sangramento (máx 5). Dano explosivo com vida > 100 aplica ragdoll.
+  </Card>
+  <Card title="Sangramento contínuo" icon="droplet">
+    Com `Bleedings >= 2` e vida > 100, aplica 1 de dano a cada 1s e notifica a cada 30s.
+  </Card>
+  <Card title="Tratamento médico" icon="kit-medical">
+    Profissionais `Medico` reanimam, passam ataduras e diagnosticam; `Emergencia` aplicam fardas. Reanimação só em alvos com vida ≤ 100.
+  </Card>
+  <Card title="Tipos sanguíneos" icon="droplet">
+    Tipo sanguíneo (campo `Blood`), doação/extração com cooldown e geração de seringas por tipo.
+  </Card>
+</CardGroup>
+
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="vrp" icon="cube">
+    Framework base.
+  </Card>
+  <Card title="PolyZone" icon="draw-polygon">
+    Zonas de área.
+  </Card>
+</CardGroup>
+
+<Info>
+  Dependências de runtime: **survival** (`CheckCrawl`/`UpdateCrawl`), **discord** (`Embed`) e **sounds**.
+</Info>
+
+---
+
+## Configuração
+
+<Note>
+  Sem pasta `config/` — os valores ficam no código.
+</Note>
+
+Os parâmetros de balanceamento médico são os seguintes.
+
+| Parâmetro | Valor |
+|---|---|
+| Sangramento máximo | 5 |
+| Dano contínuo | 1/s com `Bleedings >= 2` |
+| Tempo de reanimação | 10000 ms |
+| Vida pós-reanimação | 101 (+10 sede/fome) |
+| Vida mín. p/ doar sangue | >= 170 (dano 50, gera 5 seringas) |
+| Cooldown de doação | 10800s (3h) |
+| Cooldown pós-tratamento | 1800s (30min) |
+
+Itens: `adrenaline`, `adrenalineplus`, `gauze`, `syringe0<tipo>`. Serviços: `Medico` (tratar), `Emergencia` (fardas).
+
+---
+
+## Comandos
+
+Nenhum.
+
+---
+
+## Eventos
+
+### Interfaces Tunnel
+
+Interface `paramedic` (cliente), consumida pelo servidor para aplicar efeitos no jogador.
+
+### Recebidos no servidor
+
+| Evento | Descrição |
+|---|---|
+| `paramedic:Adrenaline` | Aplica adrenalina no alvo (recupera/estabiliza). |
+| `paramedic:Treatment` | Tratamento médico do profissional `Medico` (aplica cooldown). |
+| `paramedic:Revive` | Reanima o alvo (vida ≤ 100). |
+| `paramedic:Bandage` | Passa atadura, reduzindo o sangramento. |
+| `paramedic:Diagnostic` | Diagnostica os ferimentos do alvo. |
+| `paramedic:presetBurn` | Aplica a farda/preset de queimado. |
+| `paramedic:presetPlaster` | Aplica a farda/preset de engessado. |
+| `paramedic:extractBlood` | Extrai/doa sangue, gerando seringas do tipo. |
+| `paramedic:bloodDeath` | Marca a morte por sangramento. |
+| `Disconnect` | Limpa o estado médico ao jogador desconectar. |
+
+### Cliente
+
+| Evento | Descrição |
+|---|---|
+| `paramedic:Reset` | Reseta sangramento/ferimentos do jogador. |
+| `paramedic:Injuries` | Reaplica/exibe os ferimentos registrados. |
+| `gameEventTriggered` | Detecta o osso atingido ao tomar dano e incrementa o sangramento. |
+
+---
+
+## Customização
+
+- **Fardas:** tabela `preset` (`server-side/core.lua`, índices 1=queimado, 2=engessado).
+- **Balanceamento:** valores na tabela acima (sangramento, reanimação, cooldowns, doação).
+- **Tipo sanguíneo:** item `syringe0<Blood>` (campo `Blood` da identidade vRP).
+- **Serviços:** `Medico` / `Emergencia` em `vRP.HasService`.

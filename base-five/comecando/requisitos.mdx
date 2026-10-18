@@ -1,0 +1,136 @@
+---
+title: "Requisitos do Sistema"
+description: "Antes de subir a Base Five, confira os requisitos de hardware, software, licença e rede."
+---
+
+Antes de subir a Base Five, confira os requisitos abaixo.
+
+---
+
+## Memória (RAM): cálculo da VPS
+
+O consumo de memória da base segue esta regra prática:
+
+<CardGroup cols={3}>
+  <Card title="~20 MB por jogador" icon="user">
+    Consumo de RAM por jogador conectado.
+  </Card>
+
+  <Card title="VPS de 6 GB no mínimo" icon="memory">
+    Ponto de partida recomendado para a base.
+  </Card>
+
+  <Card title="+1 GB a cada 50 jogadores" icon="arrow-up">
+    Corresponde aos ~20 MB por jogador.
+  </Card>
+</CardGroup>
+
+<Note>
+  Em resumo: comece com **6 GB** e some **1 GB para cada 50 slots** que pretende abrir.
+</Note>
+
+### Tabela de referência
+
+| Slots de jogadores | RAM recomendada |
+| --- | --- |
+| Até 50 | 6 GB |
+| 100 | 7 GB |
+| 150 | 8 GB |
+| 200 | 9 GB |
+| 300 | 11 GB |
+
+<Note>
+  Os 6 GB de base cobrem o FXServer, o MySQL e os recursos da base rodando. O acréscimo de 1 GB/50 jogadores é o consumo incremental conforme a cidade enche.
+</Note>
+
+---
+
+## CPU
+
+O FiveM/FXServer depende fortemente de **clock por núcleo** (single-thread), não de muitos núcleos. Priorize uma VPS com bom desempenho por núcleo:
+
+<CardGroup cols={2}>
+  <Card title="Alta frequência por núcleo" icon="gauge-high">
+    Preferível a muitos núcleos lentos.
+  </Card>
+
+  <Card title="Evite CPU compartilhada" icon="triangle-exclamation">
+    VPS com CPU sobrevendida causa travamentos e queda de tick.
+  </Card>
+</CardGroup>
+
+---
+
+## Disco e rede
+
+<CardGroup cols={2}>
+  <Card title="Disco" icon="hard-drive">
+    SSD/NVMe. A base \+ banco ocupam alguns GB; reserve espaço para crescimento de logs e do banco.
+  </Card>
+
+  <Card title="Rede" icon="network-wired">
+    Boa largura de banda de upload e baixa latência até o público do servidor.
+  </Card>
+</CardGroup>
+
+---
+
+## Software necessário
+
+| Software | Versão | Observação |
+| --- | --- | --- |
+| **Windows Server** ou **Linux** | N/A | Onde o FXServer roda |
+| **FXServer** | Build `3095` | Já vem com a base |
+| **MySQL** | 8.0\+ | Banco de dados |
+
+---
+
+## Licença FiveM
+
+O servidor exige uma **licença FiveM** (gratuita):
+
+<Steps>
+  <Step title="Acesse o Keymaster">
+    Vá até [keymaster.fivem.net](https://keymaster.fivem.net).
+  </Step>
+  <Step title="Gere uma licença">
+    Crie uma nova licença na sua conta.
+  </Step>
+  <Step title="Configure no server.cfg">
+    Coloque a licença no `server.cfg` (`sv_licenseKey`).
+  </Step>
+</Steps>
+
+---
+
+## Banco de Dados (MySQL)
+
+Antes de iniciar:
+
+<Steps>
+  <Step title="Crie um banco vazio">
+    Por exemplo, `fivenetwork`.
+  </Step>
+  <Step title="Crie um usuário">
+    Com permissão total nesse banco.
+  </Step>
+  <Step title="Anote as credenciais">
+    Para a string de conexão (veja [Banco de Dados](/base-five/comecando/banco-dados)).
+  </Step>
+</Steps>
+
+<Note>
+  A maioria dos recursos cria as próprias tabelas automaticamente no primeiro boot.
+</Note>
+
+---
+
+## Porta de rede
+
+| Protocolo | Porta padrão |
+| --- | --- |
+| TCP \+ UDP | 30120 |
+
+<Info>
+  Abra essa porta no firewall e, se aplicável, no roteador/painel da VPS.
+</Info>

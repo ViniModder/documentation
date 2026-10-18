@@ -1,0 +1,340 @@
+---
+title: "Instalação"
+description: "Passo a passo para instalar e configurar o Five Radio no seu servidor FiveM."
+---
+
+## Dependências
+
+<CardGroup cols={2}>
+  <Card title="pma-voice (adaptado)" icon="microphone">
+    Versão do pma-voice fornecida com o script, já adaptada para integração com o Five Radio. Substitui o pma-voice padrão do servidor.
+  </Card>
+
+  <Card title="Qualquer framework" icon="puzzle-piece">
+    A integração com o framework é feita adaptando `config/functions.lua`, sem acoplamento direto.
+  </Card>
+</CardGroup>
+
+<Note>
+  O Five Radio precisa de pequenas adaptações no pma-voice para funcionar. Use a versão fornecida com o script ou aplique as alterações manualmente no seu pma-voice — veja a seção [Adaptação do pma-voice](#adaptação-do-pma-voice).
+</Note>
+
+<Info>
+  O Five Radio **não cria tabelas no banco de dados**. Nenhuma configuração de MySQL é necessária.
+</Info>
+
+---
+
+## Instalação do Recurso
+
+<Steps>
+  <Step title="Substitua o pma-voice">
+    Remova o pma-voice atual do servidor e coloque no lugar a versão fornecida com o Five Radio.
+  </Step>
+  <Step title="Copie a pasta do recurso">
+    Coloque a pasta `core-radio` dentro do diretório de recursos do seu servidor (ex: `resources/[core]/`).
+  </Step>
+  <Step title="Adapte o config/functions.lua">
+    Este é o único arquivo que precisa ser editado para integrar ao seu framework. Veja a seção [Adaptação de Framework](#adaptação-de-framework) abaixo.
+  </Step>
+  <Step title="Configure o recurso">
+    Edite `config/config.lua` conforme descrito na seção [Configuração](#configuração).
+  </Step>
+  <Step title="Adicione à server.cfg">
+    Certifique-se de iniciar o `pma-voice` antes do `core-radio`.
+
+    ```text
+    ensure pma-voice
+    ensure seu-framework
+    ensure core-radio
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Adaptação de Framework
+
+Toda a comunicação com o framework está isolada em `config/functions.lua`.
+
+<AccordionGroup>
+  <Accordion title="Identificação do jogador" icon="user">
+    ```lua
+    function Functions.getUserId(source)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.Passport(source)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.getUserId(source)
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromId(source)
+        -- return xPlayer and xPlayer.getIdentifier() or nil
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayer(source)
+        -- return Player and Player.PlayerData.citizenid or nil
+    end
+    
+    function Functions.getUserSource(user_id)
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.Source(user_id)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.getUserSource(user_id)
+    
+        -- Exemplo ESX:
+        -- for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
+        --     if xPlayer.getIdentifier() == user_id then return xPlayer.source end
+        -- end
+    
+        -- Exemplo QBCore:
+        -- for _, src in ipairs(QBCore.Functions.GetPlayers()) do
+        --     local Player = QBCore.Functions.GetPlayer(src)
+        --     if Player and Player.PlayerData.citizenid == user_id then return src end
+        -- end
+    end
+    
+    function Functions.getUserName(user_id)
+        -- Exemplo vRP (Creative Enchanted):
+        local name = vRP.FullName(user_id)
+        return name or "Desconhecido"
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- local identity = vRP.getUserIdentity(user_id)
+        -- return identity and (identity.firstname .. " " .. identity.name) or "Desconhecido"
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+        -- return xPlayer and xPlayer.getName() or "Desconhecido"
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+        -- if Player then
+        --     local ci = Player.PlayerData.charinfo
+        --     return ci.firstname .. " " .. ci.lastname
+        -- end
+        -- return "Desconhecido"
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Permissões" icon="shield">
+    Usada para validar o acesso a frequências restritas. Recebe a lista de grupos configurada em `RestrictedFrequencies` e retorna `true` se o jogador tiver ao menos um deles.
+
+    ```lua
+    function Functions.hasPermission(user_id, permissions)
+        if not permissions then return true end
+        local list = type(permissions) == "table" and permissions or { permissions }
+    
+        for _, perm in ipairs(list) do
+            -- Exemplo vRP (Creative Enchanted):
+            if vRP.HasGroup(user_id, perm) then return true end
+    
+            -- Exemplo vRPex / vRP padrão:
+            -- if vRP.hasPermission(user_id, perm) then return true end
+    
+            -- Exemplo ESX (por grupo):
+            -- local xPlayer = ESX.GetPlayerFromIdentifier(user_id)
+            -- if xPlayer and xPlayer.getGroup() == perm then return true end
+    
+            -- Exemplo QBCore:
+            -- local Player = QBCore.Functions.GetPlayerByCitizenId(user_id)
+            -- if Player and Player.PlayerData.permission == perm then return true end
+        end
+        return false
+    end
+    ```
+  </Accordion>
+
+  <Accordion title="Item de rádio" icon="walkie-talkie">
+    Verifica se o jogador possui o item configurado em `Radio.RequiredItem` antes de permitir a abertura do rádio.
+
+    ```lua
+    function Functions.hasItem(user_id, item, amount)
+        local qty = amount or 1
+    
+        -- Exemplo vRP (Creative Enchanted):
+        return vRP.ConsultItem(user_id, item, qty)
+    
+        -- Exemplo vRPex / vRP padrão:
+        -- return vRP.getInventoryItemAmount(user_id, item) >= qty
+    
+        -- Exemplo ESX:
+        -- local xPlayer = ESX.GetPlayerFromId(Functions.getUserSource(user_id))
+        -- return xPlayer and xPlayer.getInventoryItem(item).count >= qty
+    
+        -- Exemplo QBCore:
+        -- local Player = QBCore.Functions.GetPlayer(Functions.getUserSource(user_id))
+        -- local found  = Player and Player.Functions.GetItemByName(item)
+        -- return found and (found.amount or 0) >= qty
+    end
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Adaptação do pma-voice
+
+A versão do pma-voice fornecida com o script já contém todos os ajustes abaixo. **Use essa versão sempre que possível.**
+
+Se você já tem uma versão modificada do pma-voice no servidor (com outras adaptações que não quer perder), aplique manualmente as alterações abaixo no arquivo `client/module/radio.lua` do seu pma-voice.
+
+<Steps>
+  <Step title="Adicione a função helper de animação">
+    No topo do arquivo `client/module/radio.lua` do pma-voice (antes do `RegisterCommand("+radiotalk", ...)`), adicione:
+
+    ```lua
+    local function getRadioAnimData()
+        if GetResourceState("core-radio") == "started" then
+            local ok, data = pcall(exports["core-radio"].getRadioAnimData, exports["core-radio"])
+            if ok and data then return data end
+        end
+        return { dict = "random@arrests", anim = "generic_radio_chatter", blend = 8.0, blendOut = 0.0, flag = 49 }
+    end
+    ```
+
+    Esta função consulta o export `getRadioAnimData` do Five Radio para descobrir qual animação o jogador selecionou. Se o Five Radio não estiver iniciado, usa a animação genérica de fallback.
+  </Step>
+  <Step title="Substitua a animação no comando +radiotalk">
+    Dentro do `RegisterCommand("+radiotalk", function() ... end)`, **substitua o trecho que toca a animação fixa** pelo bloco abaixo:
+
+    ```lua
+    local ad = getRadioAnimData()
+    
+    loadAnimDictCustom(ad.dict)
+    TaskPlayAnim(Ped, ad.dict, ad.anim, ad.blend, ad.blendOut, -1, ad.flag, 0, false, false, false)
+    
+    if ad.bone then
+        local BoneIndex = GetPedBoneIndex(Ped, ad.bone)
+        local Hash      = GetHashKey("prop_cs_hand_radio")
+        local Coords    = GetOffsetFromEntityInWorldCoords(Ped, 0.0, 0.0, -5.0)
+        RadioProp = CreateObject(Hash, Coords.x, Coords.y, Coords.z, false, false, false)
+    
+        SetEntityCollision(RadioProp, false, false)
+        SetEntityCompletelyDisableCollision(RadioProp, true, true)
+        AttachEntityToEntity(
+            RadioProp, Ped, BoneIndex,
+            ad.coords.x, ad.coords.y, ad.coords.z,
+            ad.rot.x,    ad.rot.y,    ad.rot.z,
+            true, false, false, false, ad.vertex or 1, true
+        )
+    end
+    ```
+
+    O bloco `if ad.bone then` cria e attacha o prop 3D apenas para animações que tenham a posição configurada — nas animações genéricas isso é ignorado.
+  </Step>
+  <Step title="Substitua a verificação no loop de fala">
+    Dentro da `CreateThread` do `+radiotalk` (loop `while radioPressed do`), substitua a verificação de animação fixa por:
+
+    ```lua
+    if not IsEntityPlayingAnim(Ped, ad.dict, ad.anim, 3) then
+        TaskPlayAnim(Ped, ad.dict, ad.anim, ad.blend, ad.blendOut, -1, ad.flag, 0, false, false, false)
+    end
+    ```
+
+    Isso garante que a animação correta seja reaplicada caso o jogador seja interrompido (ex: hit reaction).
+  </Step>
+  <Step title="Substitua a animação no comando -radiotalk">
+    Dentro do `RegisterCommand("-radiotalk", function() ... end)`, substitua o `StopAnimTask` fixo por:
+
+    ```lua
+    local ad = getRadioAnimData()
+    StopAnimTask(PlayerPedId(), ad.dict, ad.anim, -4.0)
+    ```
+
+    E garanta que o prop seja removido logo em seguida:
+
+    ```lua
+    if DoesEntityExist(RadioProp) then
+        DeleteObject(RadioProp)
+    end
+    RadioProp = nil
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  Após aplicar os 4 passos, reinicie o servidor. A integração estará completa — quando o jogador trocar de animação no painel do Five Radio, o pma-voice passará a usar a nova animação automaticamente na próxima vez que apertar para falar.
+</Tip>
+
+---
+
+## Configuração
+
+<AccordionGroup>
+  <Accordion title="config/config.lua — Geral" icon="sliders">
+    ```lua
+    Radio.Command       = "radio"              -- Comando para abrir o rádio
+    Radio.EnableCommand = false                -- false = comando desabilitado (acesso só por item)
+    Radio.RequiredItem  = "radio"              -- Item obrigatório no inventário para abrir
+    Radio.RadioProp     = "prop_cs_hand_radio" -- Modelo 3D do rádio na mão
+    Radio.DefaultVolume = 60                   -- Volume padrão ao conectar (0–100)
+    Radio.MinFrequency  = 1
+    Radio.MaxFrequency  = 999
+    ```
+  </Accordion>
+
+  <Accordion title="config/config.lua — Animação e UI" icon="person-walking">
+    ```lua
+    -- Animação de abertura/fechamento do rádio
+    Radio.AnimDict  = "cellphone@"
+    Radio.AnimName  = "cellphone_text_read_base"
+    Radio.BoneIndex = 28422  -- Bone de attach do prop 3D na mão
+    
+    -- Interface
+    Radio.ThemeColor    = "#0143bb"  -- Cor principal da interface
+    Radio.RadioAlign    = "left"     -- Lado da tela para o painel de rádio
+    Radio.SpeakingAlign = "right"    -- Lado da tela para o indicador de fala
+    ```
+  </Accordion>
+
+  <Accordion title="config/config.lua — Frequências Restritas" icon="lock">
+    Define quais frequências exigem permissão específica para acesso. A validação é feita server-side.
+
+    ```lua
+    Radio.RestrictedFrequencies = {
+        [1]   = { "Admin" },   -- Frequência 1: somente jogadores com grupo Admin
+        [190] = { "Policia" }, -- Frequência 190: somente jogadores com grupo Policia
+    }
+    ```
+
+    Os valores devem corresponder ao sistema de grupos do seu framework, pois são passados diretamente para `Functions.hasPermission`.
+  </Accordion>
+
+  <Accordion title="config/config.lua — Animações" icon="film">
+    Define as 18 animações disponíveis para seleção na interface. Cada entrada pode conter:
+
+    | Campo | Tipo | Obrigatório | Descrição |
+    | --- | --- | :-: | --- |
+    | `dict` | `string` | ✓ | Dicionário de animação |
+    | `anim` | `string` | ✓ | Nome da animação |
+    | `blend` | `number` | ✓ | Velocidade de entrada |
+    | `blendOut` | `number` | ✓ | Velocidade de saída |
+    | `flag` | `number` | ✓ | Flag da animação |
+    | `bone` | `number` |  | Bone de attach do prop (animações com prop) |
+    | `coords` | `vector3` |  | Offset de posição do prop |
+    | `rot` | `vector3` |  | Offset de rotação do prop |
+    | `vertex` | `number` |  | Tipo de vertex para attach |
+
+    ```lua
+    Radio.Animations = {
+        ["1"] = { dict = "random@arrests", anim = "generic_radio_chatter", blend = 8.0, blendOut = 0.0, flag = 49 },
+        ["2"] = {
+            dict   = "anim@male@holding_radio",
+            anim   = "holding_radio_clip",
+            bone   = 28422,
+            coords = vector3(0.075, 0.023, -0.023),
+            rot    = vector3(-90.0, 0.0, -59.9),
+            blend  = 8.0, blendOut = 0.0, flag = 49, vertex = 2
+        },
+        -- Animações 3–18 usam os dicionários "pazeee@radio*" incluídos na pasta stream/
+    }
+    ```
+
+    <Note>
+      As animações personalizadas (`pazeee@radio*`) já estão na pasta `stream/` do recurso e são carregadas automaticamente pelo FiveM. Não é necessário instalar nada extra.
+    </Note>
+  </Accordion>
+</AccordionGroup>
