@@ -1,0 +1,614 @@
+# Configuração
+
+Guia completo de configuração do Combo Late Game.
+
+## Estrutura de Configuração
+
+A configuração está dividida em três arquivos principais:
+
+1. **config/config.lua** - Configuração principal do script
+2. **config/server/functions.lua** - Funções de integração server-side
+3. **config/client/functions.lua** - Funções de integração client-side
+
+## Configuração Principal (`config/config.lua`)
+
+### Configurações Básicas
+
+```lua
+globalConfig = {
+    -- Limite máximo de membros por sala
+    MaximumRoomMembers = 10,
+
+    -- Coordenadas dos markers para abrir o painel
+    -- Se vazio, usa o comando /lategame
+    Markers = {
+        vector3(193.24, -908.70, 28.42),
+    },
+
+    -- Desabilitar verificação de dimensions (routing buckets)
+    -- Use true se não quiser usar routing buckets
+    DisableDimensionsVerify = false,
+
+    -- Trocar lados a cada round (SideOne ↔ SideTwo)
+    ChangeSideByRound = false,
+
+    -- Vitórias necessárias para encerrar a partida (melhor de N)
+    MaxRoundWins = 10,
+
+    -- Delay após eliminar time adversário antes do próximo round (milissegundos)
+    RoundResetDelayMs = 4000,
+
+    -- Proteção de spawn (segundos de invencibilidade)
+    SpawnTimes = {
+        FirstRound = 30,    -- Primeiro round
+        OthersRounds = 5,   -- Rounds subsequentes
+    },
+}
+```
+
+### Configuração de Mapas
+
+```lua
+Maps = {
+    ['NomeInternoDoMapa'] = {
+        -- Nome exibido na UI
+        Name = 'Nome Exibido',
+
+        -- Banner do mapa (relativo à pasta web/images/)
+        Banner = '../images/nome.png',
+
+        -- Distância entre spawns de cada time
+        SpawnDistance = 10,
+
+        -- Coordenadas de spawn do Time A
+        SideOne = {
+            [1] = vector3(x, y, z),
+            -- Pode adicionar mais pontos se desejar
+        },
+
+        -- Coordenadas de spawn do Time B
+        SideTwo = {
+            [1] = vector3(x, y, z),
+        },
+
+        -- Configuração da Safezone (zona que fecha)
+        Safezone = {
+            -- Centro da zona
+            Center = vector3(x, y, z),
+
+            -- Variação de movimento (não usado atualmente)
+            Variation = 20,
+
+            -- Dano por segundo fora da zona
+            DamagePerSecond = 25,
+
+            -- Tempo para a zona fechar completamente (segundos)
+            TimeToClose = 150,
+
+            -- Configuração inicial
+            Initial = {
+                Radius = 150,  -- Raio inicial
+            },
+
+            -- Configuração final
+            Finale = {
+                Radius = 5,   -- Raio final
+            }
+        },
+    },
+}
+```
+
+#### Adicionando um Novo Mapa
+
+1. **Adicione a imagem do banner** em `web/images/`:
+   ```
+   web/images/meumapa.png
+   ```
+
+2. **Configure as coordenadas**:
+   - Use coordenadas reais do seu servidor
+   - Teste os spawns manualmente
+   - Verifique se há colisão carregada
+
+3. **Ajuste a Safezone**:
+   - `Center`: Ponto central onde a zona começa
+   - `Initial.Radius`: Raio inicial (grande)
+   - `Finale.Radius`: Raio final (pequeno)
+   - `TimeToClose`: Tempo em segundos para fechar
+   - `DamagePerSecond`: Dano por segundo fora da zona
+
+### Configuração de Modos de Jogo
+
+```lua
+Modes = {
+    ['NomeInternoDoModo'] = {
+        Name = 'Nome Exibido',
+        Banner = '../images/modo.png',
+    },
+}
+```
+
+#### Adicionando um Novo Modo
+
+1. **Defina o modo**:
+   ```lua
+   Modes = {
+       ['Snipers'] = { Name = 'Sniper', Banner = '../images/sniper.png' },
+   },
+   ```
+
+2. **Configure as armas** (veja abaixo):
+   ```lua
+   Rounds = {
+       Snipers = {
+           [1] = { 'WEAPON_SNIPERRIFLE', 'WEAPON_HEAVYSNIPER' },
+       },
+   },
+   ```
+
+### Configuração de Armas por Round
+
+```lua
+Rounds = {
+    ['NomeDoModo'] = {
+        [1] = { 'WEAPON_1', 'WEAPON_2' },  -- Round 1
+        [2] = { 'WEAPON_3', 'WEAPON_4' },  -- Round 2
+        [3] = { 'WEAPON_5', 'WEAPON_6' },  -- Round 3
+        -- ...
+    },
+}
+```
+
+#### Weapon Pools
+
+Você pode definir weapon pools para reutilizar:
+
+```lua
+local WEAPON_MODES = {
+    Pistols = { 'WEAPON_PISTOL', 'WEAPON_PISTOL_MK2', 'WEAPON_COMBATPISTOL' },
+    Rifles = { 'WEAPON_ASSAULTRIFLE', 'WEAPON_ASSAULTRIFLE_MK2', 'WEAPON_CARBINERIFLE_MK2' },
+    Snipers = { 'WEAPON_SNIPERRIFLE', 'WEAPON_HEAVYSNIPER', 'WEAPON_MARKSMANRIFLE' },
+}
+
+Rounds = {
+    Pistols = {
+        [1] = WEAPON_MODES.Pistols,
+        [2] = WEAPON_MODES.Pistols,
+        [3] = WEAPON_MODES.Pistols,
+    },
+    Snipers = {
+        [1] = WEAPON_MODES.Snipers,
+        [2] = WEAPON_MODES.Snipers,
+    },
+}
+```
+
+### Configuração de Traduções
+
+```lua
+Language = {
+    WinningTeam = 'Round finalizado! O time ganhador foi: %s',
+    RequestSent = 'Solicitação enviada.',
+    MatchCanceled = 'Partida cancelada pois o player: %s está proibido de entrar no Late Game.',
+    StartVotation = 'Iniciando votações. Digite /lategame para acompanhar.',
+    VotingCanceled = 'Votação cancelada pois algum membro desconectou.',
+    PendingRequests = 'Você tem solicitações pendentes. Aguarde um pouco para enviar novamente.',
+    ScriptRestarted = 'Seu jogo foi cancelado devido a reinicialização do script.',
+    CannotOpenPanel = 'Você não pode abrir o painel do LateGame no momento.',
+    AcceptChallenge = '%s com %d/%d membros está te desafiando, deseja aceitar?',
+    ThisRoomInVoting = 'Esta sala já está em votação.',
+    SpectatingPlayer = 'Você está espectando o player: ',
+    ExitSpectatorMode = 'Deseja sair do modo spectador?',
+    CannotUseThisName = 'Você não pode usar esse nome.',
+    NameAlreadyExists = 'Já existe uma sala com esse nome.',
+    WeaponVoteCompleted = 'Votação de armas finalizada. Iniciando votação de mapas. Digite /lategame para acompanhar.',
+    MaximumLimitOfPlayers = 'Limite maximo de players atingidos.',
+    YouWereKickedOfTheRoom = 'Você foi expulso da sala.',
+    CannotChallengeYourRoom = 'Você não pode desafiar sua propria sala.',
+    TooLongToVote = '%s Perdeu o voto, pois demorou para votar.',
+    Teams = 'Times',
+    Monitor = 'Monitorar',
+    Spectate = 'Espectar',
+    Challenges = 'Desafiar',
+}
+```
+
+### Sistema de Notificações
+
+```lua
+function globalConfig.notify(...)
+    local args = {...}
+
+    if IsDuplicityVersion() then
+        -- Server-side
+        local source = args[1]
+        -- args[1] = source
+        -- args[2] = tipo (1=erro, 2=info, 3=sucesso)
+        -- args[3] = mensagem
+        -- args[4] = tempo (ms)
+
+        TriggerClientEvent('Notify', source, "amarelo", args[3], args[4])
+    else
+        -- Client-side
+        -- args[1] = tipo
+        -- args[2] = mensagem
+        -- args[3] = tempo (ms)
+
+        TriggerEvent('Notify', "amarelo", args[2], args[3])
+    end
+end
+```
+
+Adapte para o seu sistema de notificações (QBCore, ESX, etc.).
+
+## Configuração Server (`config/server/functions.lua`)
+
+### Funções Obrigatórias
+
+#### getUserId
+
+Retorna o ID único do jogador (passport, citizenid, etc.).
+
+```lua
+getUserId = function(userSource)
+    -- vRP
+    return vRP.Passport(userSource)
+
+    -- QBCore
+    local player = QBCore.Functions.GetPlayer(userSource)
+    return player and player.PlayerData.citizenid
+
+    -- ESX
+    local xPlayer = ESX.GetPlayerFromId(userSource)
+    return xPlayer and xPlayer.identifier
+end
+```
+
+#### getUserSource
+
+Retorna o source do jogador pelo ID.
+
+```lua
+getUserSource = function(userId)
+    -- vRP
+    return vRP.Source(userId)
+
+    -- QBCore
+    local players = QBCore.Functions.GetPlayers()
+    for _, src in ipairs(players) do
+        local player = QBCore.Functions.GetPlayer(src)
+        if player.PlayerData.citizenid == userId then
+            return src
+        end
+    end
+    return nil
+end
+```
+
+#### getUserName
+
+Retorna o nome do jogador.
+
+```lua
+getUserName = function(userSource)
+    -- vRP
+    local passport = vRP.Passport(userSource)
+    local identity = vRP.Identity(passport) or {}
+    return (identity.Name or 'Indivíduo') .. ' ' .. (identity.Lastname or 'Indigente')
+
+    -- QBCore
+    local player = QBCore.Functions.GetPlayer(userSource)
+    if not player then return 'Unknown' end
+    return player.PlayerData.charinfo.firstname .. ' ' .. player.PlayerData.charinfo.lastname
+
+    -- ESX
+    local xPlayer = ESX.GetPlayerFromId(userSource)
+    return xPlayer and xPlayer.getName()
+end
+```
+
+#### hasPermission
+
+Verifica se o jogador tem uma permissão.
+
+```lua
+hasPermission = function(userId, permission)
+    -- vRP
+    return vRP.HasPermission(userId, permission)
+
+    -- QBCore
+    -- Implementar conforme seu sistema de permissões
+    return true
+
+    -- ESX
+    -- Implementar conforme seu sistema de permissões
+    return true
+end
+```
+
+### Funções Importantes
+
+#### userCanOpenLateGame
+
+Verifica se o jogador pode abrir o painel.
+
+```lua
+userCanOpenLateGame = function(userSource)
+    -- Sempre permitir
+    return true
+
+    -- Apenas VIPs
+    return serverConfig.hasUserVip(userSource)
+
+    -- Apenas com permissão específica
+    local userId = serverConfig.getUserId(userSource)
+    return serverConfig.hasPermission(userId, 'lategame.open')
+end
+```
+
+#### checkQueueName
+
+Valida nomes de salas reservados.
+
+```lua
+checkQueueName = function(queueName, queueOwnerSource)
+    local QUEUE_SPECIAL_NAMES = {
+        ['ADMIN'] = 'Admin',
+        ['VIP'] = 'Vip',
+    }
+
+    if QUEUE_SPECIAL_NAMES[queueName] then
+        local userId = serverConfig.getUserId(queueOwnerSource)
+        if not serverConfig.hasPermission(userId, QUEUE_SPECIAL_NAMES[queueName]) then
+            return false
+        end
+    end
+
+    return true
+end
+```
+
+#### canUserJoinInGame
+
+Verifica se o jogador pode entrar na partida.
+
+```lua
+canUserJoinInGame = function(userSource)
+    -- Não pode estar em outro routing bucket
+    if GetPlayerRoutingBucket(userSource) > 0 then
+        return false
+    end
+
+    -- Não pode estar morto
+    local playerPed = GetPlayerPed(userSource)
+    local health = GetEntityHealth(playerPed)
+    return health > 101
+end
+```
+
+#### savePlayerInfos
+
+Salva o estado do jogador antes da partida.
+
+```lua
+savePlayerInfos = function(userSource)
+    -- Define que está no Late Game
+    Player(userSource).state:set('inLateGame', true, true)
+    Wait(50)
+
+    local playerPed = GetPlayerPed(userSource)
+    local health = GetEntityHealth(playerPed)
+
+    -- Salva informações
+    playerInfos[userSource] = {
+        armour = GetPedArmour(playerPed),
+        coords = GetEntityCoords(playerPed),
+        health = health,
+        dimension = GetPlayerRoutingBucket(userSource)
+    }
+
+    Player(userSource).state:set('temporaryDataLateGame', playerInfos[userSource], true)
+end
+```
+
+#### setPlayerInfos
+
+Restaura o estado do jogador após a partida.
+
+```lua
+setPlayerInfos = function(userSource)
+    -- Limpa time
+    Player(userSource).state:set('teamLateGame', nil, true)
+    Wait(50)
+
+    local userInfos = playerInfos[userSource]
+
+    if userInfos then
+        local playerPed = GetPlayerPed(userSource)
+
+        -- Restaura posição
+        SetEntityCoords(playerPed, userInfos.coords)
+
+        -- Restaura colete
+        SetPedArmour(playerPed, userInfos.armour)
+
+        -- Restaura vida
+        SetEntityHealth(playerPed, userInfos.health)
+
+        -- Restaura routing bucket
+        serverConfig.setPlayerRoutingBucket(userSource, userInfos.dimension)
+
+        -- Limpa dados
+        playerInfos[userSource] = nil
+        Player(userSource).state:set('temporaryDataLateGame', nil, true)
+    end
+
+    -- Delay para sair do estado
+    SetTimeout(2000, function()
+        Player(userSource).state:set('inLateGame', false, true)
+    end)
+end
+```
+
+#### sendWebhookWinner
+
+Envia webhook ao finalizar partida (opcional).
+
+```lua
+sendWebhookWinner = function(winningTeamName, looserTeamName, matchMap, matchWeapon)
+    local embed = {
+        {
+            title = 'Winner LateGame',
+            description = string.format('Time %s ganhou do time %s', winningTeamName, looserTeamName),
+            fields = {
+                { name = 'Mapa jogado', value = tostring(matchMap) },
+                { name = 'Modo jogado', value = tostring(matchWeapon) },
+            },
+            footer = {
+                text = 'LateGame - ' .. os.date('%d/%m/%Y | %H:%M:%S'),
+            },
+            color = 15158332,
+        }
+    }
+
+    local webhook = 'SEU_WEBHOOK_AQUI'
+
+    PerformHttpRequest(webhook, function(error, text, headers) end, 'POST', json.encode({
+        username = 'Combo Store - LateGame',
+        embeds = embed
+    }), { ['Content-Type'] = 'application/json' })
+end
+```
+
+## Configuração Client (`config/client/functions.lua`)
+
+### Funções Importantes
+
+#### openHandler
+
+Configura como abrir o painel (marker ou comando).
+
+```lua
+openHandler = function(handler)
+    if #globalConfig.Markers > 0 then
+        -- Usa markers
+        CreateThread(function()
+            while true do
+                local sleepTime = 1000
+                local playerPed = PlayerPedId()
+                local pedCoords = GetEntityCoords(playerPed)
+
+                for _, markerCoords in ipairs(globalConfig.Markers) do
+                    local distance = #(pedCoords - markerCoords)
+
+                    if distance < 7 then
+                        sleepTime = 0
+                        DrawMarker(21, markerCoords, 0, 0, 0, 0, 180.0, 130.0, 2.0, 2.0, 1.0, 255, 0, 0, 50, 1, 0, 0, 1)
+
+                        if IsControlJustPressed(0, 38) and distance < 2 then
+                            handler()
+                            Wait(1000)
+                        end
+                    end
+                end
+
+                Wait(sleepTime)
+            end
+        end)
+    else
+        -- Usa comando
+        RegisterCommand('lategame', handler)
+    end
+end
+```
+
+#### Key Mappings
+
+Configura as teclas de atalho.
+
+```lua
+CreateThread(function()
+    RegisterKeyMapping('activeStatistic', 'Abrir Score Board', 'keyboard', 'HOME')
+    RegisterKeyMapping('leaveLategameSpectator', 'Sair do espectador', 'keyboard', 'F7')
+end)
+```
+
+## Convars do Servidor
+
+Configure no `server.cfg`:
+
+```cfg
+# Tempo de votação de modo (segundos)
+set combo_lategame_vote_mode_sec 120
+
+# Tempo de votação de mapa (segundos)
+set combo_lategame_vote_map_sec 120
+```
+
+## Dicas de Configuração
+
+### Balanceamento de Partidas
+
+1. **Ajuste o MaxRoundWins**:
+   - 5-7 para partidas rápidas
+   - 10-13 para partidas padrão
+   - 15+ para partidas longas
+
+2. **Configure o RoundResetDelayMs**:
+   - 3000-4000 para ritmo rápido
+   - 5000-7000 para ritmo normal
+   - 8000+ para ritmo lento
+
+3. **Ajuste a proteção de spawn**:
+   - FirstRound: 20-30 segundos
+   - OthersRounds: 3-5 segundos
+
+### Configuração de Safezone
+
+1. **Para mapas pequenos**:
+   ```lua
+   Initial = { Radius = 50 },
+   Finale = { Radius = 5 },
+   TimeToClose = 60,
+   ```
+
+2. **Para mapas grandes**:
+   ```lua
+   Initial = { Radius = 200 },
+   Finale = { Radius = 10 },
+   TimeToClose = 180,
+   ```
+
+3. **Sem zona (apenas combate)**:
+   ```lua
+   DamagePerSecond = 0,
+   TimeToClose = 9999,
+   ```
+
+### Configuração de Armas
+
+1. **Para pistol only**:
+   ```lua
+   Pistols = {
+       [1] = WEAPON_MODES.Pistols,
+       [2] = WEAPON_MODES.Pistols,
+       -- Todos os rounds iguais
+   },
+   ```
+
+2. **Para progressão**:
+   ```lua
+   MixedGuns = {
+       [1] = WEAPON_MODES.Pistols,
+       [2] = WEAPON_MODES.Pistols,
+       [3] = WEAPON_MODES.Submachine,
+       [4] = WEAPON_MODES.Submachine,
+       [5] = WEAPON_MODES.Rifles,
+       [6] = WEAPON_MODES.Rifles,
+   },
+   ```
+
+## Exemplo Completo
+
+Veja [config/config.lua](config/config.lua) para um exemplo completo de configuração.
