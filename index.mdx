@@ -1,0 +1,88 @@
+---
+title: "Combo Late Game"
+description: "Sistema completo de partidas competitivas para FiveM com votação de modos e mapas, sistema de salas e duelos entre times."
+icon: "gamepad"
+---
+
+O **Combo Late Game** é um sistema completo de partidas competitivas para servidores FiveM. Os jogadores criam salas, formam times, desafiam outras salas e votam no modo de jogo e mapa antes de iniciar a partida em formato melhor de N rounds com troca de lados opcional, placar ao vivo, kill feed e zona segura que fecha progressivamente.
+
+## 📚 Navegação da Documentação
+
+<CardGroup cols={2}>
+  <Card title="Apresentação" icon="book-open" href="/apresentacao">
+    Visão geral do sistema, funcionalidades, compatibilidade e comandos.
+  </Card>
+
+  <Card title="Instalação" icon="download" href="/instalacao">
+    Guia passo a passo de instalação e adaptação para vRP, QBCore e ESX.
+  </Card>
+
+  <Card title="Configuração" icon="gear" href="/configuracao">
+    Configuração detalhada de mapas, modos de jogo, armas, safezone e convars.
+  </Card>
+
+  <Card title="API & Integração" icon="code" href="/api">
+    Documentação completa de eventos client/server, tunnel e state bags.
+  </Card>
+</CardGroup>
+
+## ⚡ Visão Rápida
+
+### O que o sistema oferece?
+
+- ✅ **Criação de salas e times** com limites e permissões de kick do líder
+- ✅ **Sistema de convites e desafios** direto entre líderes de sala
+- ✅ **Votação em duas fases**: Modo de jogo → Mapa
+- ✅ **Partidas competitivas** em formato melhor de N rounds com troca de lados opcional
+- ✅ **Safezone progressiva** com dano por segundo configurável fora da zona segura
+- ✅ **Modo espectador** com alternância dinâmica de alvos
+- ✅ **Routing buckets isolados** para evitar qualquer interferência no mapa principal
+- ✅ **Integração nativa com vRP / vRP 2.0** e facilmente adaptável para QBCore e ESX
+
+### Funcionalidades
+
+| Funcionalidade | Descrição |
+| :--- | :--- |
+| **Sistema de Salas** | Crie salas customizadas, convide jogadores e gerencie participantes |
+| **Desafios** | Desafie outras salas com aceitação e recusa em tempo real |
+| **Votação** | Votação com chat integrado e delay anti-spam |
+| **Modos de Jogo** | Pistols, Rifles, Submachine, MixedGuns e armas configuráveis por round |
+| **Mapas** | Mirage Exclusive, Dust 1.6, Dust Go, ItalyV1, ClockTower |
+| **Safezone** | Barreira dinâmica que fecha progressivamente durante os rounds |
+| **Espectação** | Assista partidas ao vivo com câmera direcionada aos jogadores |
+| **Routing Buckets** | Partidas isoladas por dimensão no servidor com salvamento e restauração de estado |
+
+### Frameworks Suportados
+
+- ✅ **vRP** (suporte nativo)
+- ✅ **vRP 2.0** (suporte nativo)
+- 🔄 **QBCore** (requer adaptação nas funções de framework)
+- 🔄 **ESX** (requer adaptação nas funções de framework)
+
+## 🚀 Instalação Rápida
+
+```bash
+resources/
+└── [combo_lategame]/
+    └── combo_lategame/
+```
+
+Adicione ao seu `server.cfg`:
+
+```cfg
+ensure vrp
+ensure combo_lategame
+```
+
+<Tip>
+  Para mais detalhes sobre configuração de permissões, convars e adaptação para outros frameworks, consulte o [Guia de Instalação](/instalacao).
+</Tip>
+
+## 🎮 Comandos Principais
+
+| Comando | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `/lategame` | Client | Abre a interface de salas do Late Game |
+| `/aceitarlg` | Client | Aceita um desafio pendente de outra sala |
+| `HOME` | Tecla | Abre ou fecha o placar da partida ao vivo |
+| `F7` | Tecla | Sai do modo espectador |
