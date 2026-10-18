@@ -50,7 +50,8 @@
             "pages": [
               "welcome",
               "termos-de-uso",
-              "dicas"
+              "dicas",
+              "CONFIGURACAO"
             ]
           },
           {
@@ -179,140 +180,6 @@
                   "five-livestream/configuracao"
                 ]
               }
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Base Five",
-        "groups": [
-          {
-            "group": "Começando",
-            "pages": [
-              "base-five/introducao",
-              "base-five/comecando/sobre",
-              "base-five/comecando/requisitos",
-              "base-five/comecando/instalacao",
-              "base-five/comecando/banco-dados",
-              "base-five/comecando/configuracoes"
-            ]
-          },
-          {
-            "group": "Configuração da Base",
-            "pages": [
-              "base-five/configuracao-da-base/itens",
-              "base-five/configuracao-da-base/veiculos",
-              "base-five/configuracao-da-base/permissoes"
-            ]
-          },
-          {
-            "group": "Referência Rápida",
-            "pages": [
-              "base-five/referencia/comandos",
-              "base-five/referencia/localizacoes"
-            ]
-          },
-          {
-            "group": "Recursos",
-            "pages": [
-              "base-five/recursos/five-admin",
-              "base-five/recursos/five-arsenal",
-              "base-five/recursos/five-bank",
-              "base-five/recursos/five-bennys",
-              "base-five/recursos/five-c4",
-              "base-five/recursos/five-calls",
-              "base-five/recursos/five-codiguin",
-              "base-five/recursos/five-crafting",
-              "base-five/recursos/five-crash",
-              "base-five/recursos/five-creator",
-              "base-five/recursos/five-dismantle",
-              "base-five/recursos/five-elevator",
-              "base-five/recursos/five-esc",
-              "base-five/recursos/five-fuga",
-              "base-five/recursos/five-influencers",
-              "base-five/recursos/five-jobs",
-              "base-five/recursos/five-laundry",
-              "base-five/recursos/five-modules",
-              "base-five/recursos/five-nailshop",
-              "base-five/recursos/five-pedscale",
-              "base-five/recursos/five-ptfx",
-              "base-five/recursos/five-punishments",
-              "base-five/recursos/five-roubos",
-              "base-five/recursos/five-routes",
-              "base-five/recursos/five-sitting",
-              "base-five/recursos/five-skins",
-              "base-five/recursos/five-tuning",
-              "base-five/recursos/five-vehicles",
-              "base-five/recursos/five-vehsystem",
-              "base-five/recursos/five-wardrobe",
-              "base-five/recursos/five-weather",
-              "base-five/recursos/five_logs"
-            ]
-          },
-          {
-            "group": "Scripts",
-            "pages": [
-              "base-five/scripts/admin",
-              "base-five/scripts/animacoes",
-              "base-five/scripts/animals",
-              "base-five/scripts/archives",
-              "base-five/scripts/arena",
-              "base-five/scripts/banned",
-              "base-five/scripts/boosting",
-              "base-five/scripts/cemitery",
-              "base-five/scripts/chest",
-              "base-five/scripts/cinematiccam",
-              "base-five/scripts/crons",
-              "base-five/scripts/device",
-              "base-five/scripts/discord",
-              "base-five/scripts/domination",
-              "base-five/scripts/doors",
-              "base-five/scripts/dynamic",
-              "base-five/scripts/ems",
-              "base-five/scripts/engine",
-              "base-five/scripts/fuelstations",
-              "base-five/scripts/halloween",
-              "base-five/scripts/hoverfy",
-              "base-five/scripts/hud",
-              "base-five/scripts/inspect",
-              "base-five/scripts/inventory",
-              "base-five/scripts/keyboard",
-              "base-five/scripts/lettergame",
-              "base-five/scripts/markers",
-              "base-five/scripts/marriage",
-              "base-five/scripts/mdt",
-              "base-five/scripts/moneywash",
-              "base-five/scripts/notepad",
-              "base-five/scripts/pages",
-              "base-five/scripts/painel",
-              "base-five/scripts/paramedic",
-              "base-five/scripts/party",
-              "base-five/scripts/perimeter",
-              "base-five/scripts/plants",
-              "base-five/scripts/player",
-              "base-five/scripts/prison",
-              "base-five/scripts/propertys",
-              "base-five/scripts/races",
-              "base-five/scripts/safezone",
-              "base-five/scripts/securitycam",
-              "base-five/scripts/shops",
-              "base-five/scripts/slotmachine",
-              "base-five/scripts/survival",
-              "base-five/scripts/tackle",
-              "base-five/scripts/taskbar",
-              "base-five/scripts/taximeter",
-              "base-five/scripts/ticket",
-              "base-five/scripts/trunkchest",
-              "base-five/scripts/vehcontrol",
-              "base-five/scripts/wc_emotes_v7"
-            ]
-          },
-          {
-            "group": "Framework vRP",
-            "pages": [
-              "base-five/framework/arquitetura",
-              "base-five/framework/servidor",
-              "base-five/framework/cliente"
             ]
           }
         ]
