@@ -11,23 +11,19 @@
   "navigation": {
     "pages": [
       {
-        "group": "Começando",
+        "group": "Comece por aqui",
         "pages": [
-          "index",
-          "apresentacao"
+          "index"
         ]
       },
       {
-        "group": "Guias",
+        "group": "Combo Late Game",
+        "icon": "gamepad",
         "pages": [
-          "instalacao",
-          "configuracao"
-        ]
-      },
-      {
-        "group": "Desenvolvedores",
-        "pages": [
-          "api"
+          "combo-lategame/apresentacao",
+          "combo-lategame/instalacao",
+          "combo-lategame/configuracao",
+          "combo-lategame/api"
         ]
       }
     ]

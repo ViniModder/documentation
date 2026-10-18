@@ -7,10 +7,10 @@ O **Combo Late Game** é um sistema completo de partidas competitivas para servi
 ## 📖 Documentação
 
 - **[Início / Visão Geral](index.mdx)** - Índice e apresentação rápida
-- **[Apresentação](apresentacao.mdx)** - Visão geral detalhada do sistema
-- **[Instalação](instalacao.mdx)** - Guia de instalação (vRP, QBCore, ESX)
-- **[Configuração](configuracao.mdx)** - Guia completo de configuração
-- **[API e Integração](api.mdx)** - Documentação técnica da API
+- **[Apresentação](combo-lategame/apresentacao.mdx)** - Visão geral detalhada do sistema
+- **[Instalação](combo-lategame/instalacao.mdx)** - Guia de instalação (vRP, QBCore, ESX)
+- **[Configuração](combo-lategame/configuracao.mdx)** - Guia completo de configuração
+- **[API e Integração](combo-lategame/api.mdx)** - Documentação técnica da API
 
 ## 🌐 Hospedar a Documentação
 
